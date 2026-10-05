@@ -11,7 +11,14 @@ export const THRESHOLD = 0.7;
 
 async function api<T = any>(path: string, params: Record<string, string | number>, key: string): Promise<T[]> {
   const qs = new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]));
-  const res = await fetch(`${BASE}${path}?${qs}`, { headers: { "x-apisports-key": key } });
+  // Essai 1 : clé directe API-Sports (dashboard.api-football.com)
+  let res = await fetch(`${BASE}${path}?${qs}`, { headers: { "x-apisports-key": key } });
+  // Essai 2 : clé RapidAPI (api-football-v1.p.rapidapi.com) si la clé directe est refusée
+  if (res.status === 403) {
+    res = await fetch(`https://api-football-v1.p.rapidapi.com/v3${path}?${qs}`, {
+      headers: { "x-rapidapi-key": key, "x-rapidapi-host": "api-football-v1.p.rapidapi.com" },
+    });
+  }
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`API-Football [${res.status}]: ${body.slice(0, 200)}`);
