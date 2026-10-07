@@ -128,24 +128,29 @@ async function analyze(fx: any, key: string): Promise<Analysis | null> {
   };
 }
 
+export type Fixture = { id: number; date: string; status: string; league: string; country: string; home: string; away: string; homeLogo: string; awayLogo: string; gh: number | null; ga: number | null };
+
 const cache = new Map<string, { at: number; data: unknown }>();
 
 export async function analyzeDay(date: string, category: string, limit: number, key: string) {
   const ck = `${date}|${category}|${limit}`;
   const hit = cache.get(ck);
-  if (hit && Date.now() - hit.at < 3600_000) return hit.data as { analyzed: number; total: number; matches: Analysis[] };
+  if (hit && Date.now() - hit.at < 3600_000) return hit.data as { fixtures: Fixture[]; analyzed: number; total: number; matches: Analysis[] };
 
   const all = await api<any>("/fixtures", { date, timezone: "Europe/Paris" }, key);
   const ids = LEAGUES[category];
-  const pool = all
-    .filter((f) => f.fixture.status.short === "NS")
-    .filter((f) => !ids || ids.includes(f.league.id))
-    .slice(0, limit);
+  const inCat = all.filter((f) => !ids || ids.includes(f.league.id));
+  const pool = inCat.filter((f) => f.fixture.status.short === "NS").slice(0, limit);
+  const fixtures: Fixture[] = inCat.map((f) => ({
+    id: f.fixture.id, date: f.fixture.date, status: f.fixture.status.short, league: f.league.name, country: f.league.country,
+    home: f.teams.home.name, away: f.teams.away.name, homeLogo: f.teams.home.logo, awayLogo: f.teams.away.logo,
+    gh: f.goals.home, ga: f.goals.away,
+  })).sort((a, b) => a.date.localeCompare(b.date));
   const results: Analysis[] = [];
   for (const fx of pool) {
     try { const a = await analyze(fx, key); if (a) results.push(a); } catch (e) { console.error(e); }
   }
-  const data = { analyzed: pool.length, total: all.length, matches: results.sort((a, b) => (b.markets[0]?.prob ?? 0) - (a.markets[0]?.prob ?? 0)) };
+  const data = { fixtures, analyzed: pool.length, total: all.length, matches: results.sort((a, b) => (b.markets[0]?.prob ?? 0) - (a.markets[0]?.prob ?? 0)) };
   cache.set(ck, { at: Date.now(), data });
   return data;
 }
