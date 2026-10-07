@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { getPredictions } from "@/lib/football.functions";
-import type { Analysis, Market } from "@/lib/football.server";
+import type { Analysis, Market, Fixture } from "@/lib/football.server";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,7 +30,7 @@ const pct = (p: number) => `${Math.round(p * 100)}%`;
 
 function Index() {
   const [date, setDate] = useState("");
-  const [cat, setCat] = useState<(typeof CATS)[number]["id"]>("top5");
+  const [cat, setCat] = useState<(typeof CATS)[number]["id"]>("tous");
   useEffect(() => setDate(new Date().toISOString().slice(0, 10)), []);
   const fn = useServerFn(getPredictions);
   const q = useQuery({
@@ -78,8 +78,36 @@ function Index() {
           </p>
         )}
         {q.data?.matches.map((m) => <MatchCard key={m.id} m={m as Analysis} />)}
+        {q.data && !q.data.error && <FixtureList title="Tous les matchs du jour" items={(q.data.fixtures as Fixture[]).filter((f) => !FINISHED.includes(f.status))} />}
+        {q.data && !q.data.error && <FixtureList title="Historique · matchs terminés" items={(q.data.fixtures as Fixture[]).filter((f) => FINISHED.includes(f.status))} />}
       </main>
     </div>
+  );
+}
+
+const FINISHED = ["FT", "AET", "PEN"];
+const sofa = (h: string, a: string) => `https://www.google.com/search?q=${encodeURIComponent(`sofascore ${h} vs ${a}`)}&btnI=1`;
+
+function SofaLink({ h, a }: { h: string; a: string }) {
+  return <a href={sofa(h, a)} target="_blank" rel="noreferrer" className="rounded border border-accent px-2 py-0.5 text-xs font-semibold text-accent hover:bg-accent hover:text-accent-foreground">Sofascore ↗</a>;
+}
+
+function FixtureList({ title, items }: { title: string; items: Fixture[] }) {
+  return (
+    <section className="rounded-lg border border-border bg-card">
+      <h2 className="border-b border-border px-4 py-3 font-display text-3xl tracking-wide text-primary">{title} ({items.length})</h2>
+      {items.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Aucun match.</p> : (
+        <ul>
+          {items.map((f) => (
+            <li key={f.id} className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-2 text-sm first:border-t-0">
+              <span className="w-12 text-muted-foreground">{new Date(f.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
+              <span className="min-w-0 flex-1"><span className="font-semibold">{f.home}</span>{" "}<span className="font-bold text-accent">{f.gh != null ? `${f.gh} - ${f.ga}` : "vs"}</span>{" "}<span className="font-semibold">{f.away}</span><span className="block text-xs text-muted-foreground">{f.country} · {f.league} · {f.status}</span></span>
+              <SofaLink h={f.home} a={f.away} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -104,7 +132,7 @@ function MatchCard({ m }: { m: Analysis }) {
   return (
     <article className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border px-4 py-2 text-xs uppercase tracking-wider text-muted-foreground">
-        <img src={m.leagueLogo} alt="" className="h-4 w-4" /> {m.country} · {m.league} · {time}
+        <img src={m.leagueLogo} alt="" className="h-4 w-4" /> {m.country} · {m.league} · {time}<span className="ml-auto normal-case"><SofaLink h={m.home.name} a={m.away.name} /></span>
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 py-5">
         <Team name={m.home.name} logo={m.home.logo} />
@@ -141,7 +169,7 @@ function MatchCard({ m }: { m: Analysis }) {
                 {m.h2h.map((h, i) => (
                   <tr key={i} className="border-t border-border">
                     <td className="py-1.5">{new Date(h.date).toLocaleDateString("fr-FR")}</td>
-                    <td>{h.home} – {h.away}</td>
+                    <td>{h.home} – {h.away} <SofaLink h={h.home} a={h.away} /></td>
                     <td className="text-center font-bold">{h.score}</td>
                     <td className="text-right">{h.corners ?? "—"}</td>
                   </tr>
