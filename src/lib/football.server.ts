@@ -8,7 +8,7 @@ export const LEAGUES: Record<string, number[] | null> = {
 };
 
 // Grands championnats : leurs matchs sont épinglés en tête de toutes les listes
-export const TOP_LEAGUE_IDS = new Set<number>(LEAGUES.top5!);
+export const TOP_LEAGUE_IDS = new Set<number>(LEAGUES["top5"]!);
 
 export const THRESHOLD = 0.7;
 
