@@ -144,12 +144,17 @@ export async function analyzeDay(date: string, category: string, limit: number, 
   const all = await api<any>("/fixtures", { date, timezone: "Europe/Paris" }, key);
   const ids = LEAGUES[category];
   const inCat = all.filter((f) => !ids || ids.includes(f.league.id));
-  const pool = inCat.filter((f) => f.fixture.status.short === "NS").slice(0, limit);
+  const isTop = (f: any) => (TOP_LEAGUE_IDS.has(f.league.id) ? 1 : 0);
+  // Les matchs des grands championnats sont analysés en priorité et épinglés en tête
+  const pool = inCat.filter((f) => f.fixture.status.short === "NS")
+    .sort((a, b) => isTop(b) - isTop(a) || a.fixture.date.localeCompare(b.fixture.date))
+    .slice(0, limit);
   const fixtures: Fixture[] = inCat.map((f) => ({
     id: f.fixture.id, date: f.fixture.date, status: f.fixture.status.short, league: f.league.name, country: f.league.country,
+    top: isTop(f) === 1,
     home: f.teams.home.name, away: f.teams.away.name, homeLogo: f.teams.home.logo, awayLogo: f.teams.away.logo,
     gh: f.goals.home, ga: f.goals.away,
-  })).sort((a, b) => a.date.localeCompare(b.date));
+  })).sort((a, b) => (b.top ? 1 : 0) - (a.top ? 1 : 0) || a.date.localeCompare(b.date));
   const results: Analysis[] = [];
   for (const fx of pool) {
     try { const a = await analyze(fx, key); if (a) results.push(a); } catch (e) { console.error(e); }
