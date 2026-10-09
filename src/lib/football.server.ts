@@ -132,7 +132,7 @@ async function analyze(fx: any, key: string): Promise<Analysis | null> {
   };
 }
 
-export type Fixture = { id: number; date: string; status: string; league: string; country: string; home: string; away: string; homeLogo: string; awayLogo: string; gh: number | null; ga: number | null };
+export type Fixture = { id: number; date: string; status: string; league: string; country: string; top: boolean; home: string; away: string; homeLogo: string; awayLogo: string; gh: number | null; ga: number | null };
 
 const cache = new Map<string, { at: number; data: unknown }>();
 
