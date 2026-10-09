@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { getPredictions } from "@/lib/football.functions";
+import { getPredictions, getDayCounts } from "@/lib/football.functions";
 import type { Analysis, Market, Fixture } from "@/lib/football.server";
 
 export const Route = createFileRoute("/")({
@@ -26,12 +26,24 @@ const CATS = [
   { id: "tous", label: "Tous" },
 ] as const;
 
+const DAY_LABELS = ["Aujourd'hui", "Demain", "Après-demain", "J+3"];
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 
 function Index() {
   const [date, setDate] = useState("");
   const [cat, setCat] = useState<(typeof CATS)[number]["id"]>("tous");
-  useEffect(() => setDate(new Date().toISOString().slice(0, 10)), []);
+  const [days, setDays] = useState<string[]>([]);
+  useEffect(() => {
+    const ds = [0, 1, 2, 3].map((n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toLocaleDateString("en-CA"); });
+    setDays(ds); setDate(ds[0]!);
+  }, []);
+  const countFn = useServerFn(getDayCounts);
+  const counts = useQuery({
+    queryKey: ["counts", days, cat],
+    queryFn: () => countFn({ data: { dates: days, category: cat } }),
+    enabled: days.length === 4,
+    staleTime: 30 * 60_000,
+  });
   const fn = useServerFn(getPredictions);
   const q = useQuery({
     queryKey: ["preds", date, cat],
@@ -59,10 +71,24 @@ function Index() {
             Estimation des buts, du vainqueur probable et des corners. Seuls les pronostics avec au moins 70% de chance sont affichés.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <input
-              type="date" value={date} onChange={(e) => setDate(e.target.value)}
-              className="rounded-md border border-input bg-card px-3 py-2 text-foreground"
-            />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {days.map((d, i) => (
+              <button
+                key={d} onClick={() => setDate(d)}
+                className={`rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${date === d ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card hover:bg-secondary"}`}
+              >
+                {DAY_LABELS[i]}{counts.data?.[d] != null && <span className="ml-1 opacity-75">({counts.data[d]})</span>}
+              </button>
+            ))}
+          </div>
+          {date && days.length > 0 && (
+            <p className="mt-3 font-display text-3xl tracking-wide text-primary">
+              {DAY_LABELS[days.indexOf(date)] ?? ""} - {new Date(date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+              {counts.data?.[date] != null && <span className="ml-2 text-lg text-muted-foreground">· {counts.data[date]} match(s)</span>}
+            </p>
+          )}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             {CATS.map((c) => (
               <button
                 key={c.id} onClick={() => setCat(c.id)}
@@ -137,7 +163,7 @@ function FixtureList({ title, items }: { title: string; items: Fixture[] }) {
             <li key={f.id} className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-2 text-sm first:border-t-0">
               {f.top && <span title="Grand championnat">📌</span>}
               <span className="w-12 text-muted-foreground">{new Date(f.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
-              <span className="min-w-0 flex-1"><span className="font-semibold">{f.home}</span>{" "}<span className="font-bold text-accent">{f.gh != null ? `${f.gh} - ${f.ga}` : "vs"}</span>{" "}<span className="font-semibold">{f.away}</span><span className="block text-xs text-muted-foreground">{f.country} · {f.league} · {f.status}</span></span>
+              <Link to="/match/$id" params={{ id: String(f.id) }} className="min-w-0 flex-1 hover:underline"><span className="font-semibold">{f.home}</span>{" "}<span className="font-bold text-accent">{f.gh != null ? `${f.gh} - ${f.ga}` : "vs"}</span>{" "}<span className="font-semibold">{f.away}</span><span className="block text-xs text-muted-foreground">{f.country} · {f.league} · {f.status}</span></Link>
               <SofaLink h={f.home} a={f.away} />
             </li>
           ))}
@@ -166,19 +192,19 @@ function MatchCard({ m }: { m: Analysis }) {
   const time = new Date(m.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   const inf = m.h2hInfluence;
   return (
-    <article className="overflow-hidden rounded-lg border border-border bg-card">
+    <article className="overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-primary">
       <div className="flex items-center gap-2 border-b border-border px-4 py-2 text-xs uppercase tracking-wider text-muted-foreground">
         {m.top && <span className="rounded bg-accent px-1.5 py-0.5 font-bold text-accent-foreground" title="Grand championnat">📌 Grand championnat</span>}
         <img src={m.leagueLogo} alt="" className="h-4 w-4" /> {m.country} · {m.league} · {time}<span className="ml-auto normal-case"><SofaLink h={m.home.name} a={m.away.name} /></span>
       </div>
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 py-5">
+      <Link to="/match/$id" params={{ id: String(m.id) }} className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 py-5 hover:bg-secondary/40" title="Voir le détail du match">
         <Team name={m.home.name} logo={m.home.logo} />
         <div className="text-center">
           <div className="font-display text-4xl text-accent">{m.xgHome.toFixed(1)} – {m.xgAway.toFixed(1)}</div>
           <div className="text-xs text-muted-foreground">buts attendus</div>
         </div>
         <Team name={m.away.name} logo={m.away.logo} right />
-      </div>
+      </Link>
 
       <div className="grid gap-4 border-t border-border p-4 md:grid-cols-3">
         <div className="space-y-4">
