@@ -135,6 +135,7 @@ function FixtureList({ title, items }: { title: string; items: Fixture[] }) {
         <ul>
           {items.map((f) => (
             <li key={f.id} className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-2 text-sm first:border-t-0">
+              {f.top && <span title="Grand championnat">📌</span>}
               <span className="w-12 text-muted-foreground">{new Date(f.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
               <span className="min-w-0 flex-1"><span className="font-semibold">{f.home}</span>{" "}<span className="font-bold text-accent">{f.gh != null ? `${f.gh} - ${f.ga}` : "vs"}</span>{" "}<span className="font-semibold">{f.away}</span><span className="block text-xs text-muted-foreground">{f.country} · {f.league} · {f.status}</span></span>
               <SofaLink h={f.home} a={f.away} />
@@ -167,6 +168,7 @@ function MatchCard({ m }: { m: Analysis }) {
   return (
     <article className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-center gap-2 border-b border-border px-4 py-2 text-xs uppercase tracking-wider text-muted-foreground">
+        {m.top && <span className="rounded bg-accent px-1.5 py-0.5 font-bold text-accent-foreground" title="Grand championnat">📌 Grand championnat</span>}
         <img src={m.leagueLogo} alt="" className="h-4 w-4" /> {m.country} · {m.league} · {time}<span className="ml-auto normal-case"><SofaLink h={m.home.name} a={m.away.name} /></span>
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 py-5">
