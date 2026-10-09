@@ -7,6 +7,9 @@ export const LEAGUES: Record<string, number[] | null> = {
   tous: null,
 };
 
+// Grands championnats : leurs matchs sont épinglés en tête de toutes les listes
+export const TOP_LEAGUE_IDS = new Set<number>(LEAGUES.top5!);
+
 export const THRESHOLD = 0.7;
 
 async function api<T = any>(path: string, params: Record<string, string | number>, key: string): Promise<T[]> {
