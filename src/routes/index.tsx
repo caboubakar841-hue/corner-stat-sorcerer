@@ -104,7 +104,7 @@ function Index() {
         )}
         {q.data && !q.data.error && (
           <p className="text-sm text-muted-foreground">
-            {q.data.analyzed} match(s) analysé(s) · {q.data.matches.length} avec au moins un pronostic ≥ 70%
+            {q.data.analyzed} match(s) analysé(s) · {q.data.matches.length} {cat === "top5" ? "affiché(s) · tous les pronostics" : "avec au moins un pronostic ≥ 70%"}
           </p>
         )}
         {q.data && !q.data.error && q.data.matches.length === 0 && (
@@ -181,7 +181,10 @@ function MatchCard({ m }: { m: Analysis }) {
       </div>
 
       <div className="grid gap-4 border-t border-border p-4 md:grid-cols-3">
-        <Block title="Vainqueur probable"><MarketList items={g("winner")} /></Block>
+        <div className="space-y-4">
+          <Block title="Vainqueur probable"><MarketList items={g("winner")} /></Block>
+          {m.exactScore && <Block title="Score exact probable"><div className="flex items-baseline justify-between"><span className="font-display text-4xl text-primary">{m.exactScore.score}</span><span className="text-sm text-muted-foreground">{pct(m.exactScore.prob)}</span></div></Block>}
+          </div>
         <Block title={`Buts · ${(m.xgHome + m.xgAway).toFixed(2)} attendus`}><MarketList items={g("goals")} /></Block>
         <Block title={`Corners · ${m.xCorners != null ? m.xCorners.toFixed(1) + " attendus" : "données insuffisantes"}`}><MarketList items={g("corners")} /></Block>
       </div>

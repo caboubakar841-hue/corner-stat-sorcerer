@@ -48,12 +48,12 @@ export type H2H = { date: string; home: string; away: string; score: string; cor
 export type Analysis = {
   id: number; date: string; league: string; leagueLogo: string; country: string; top: boolean;
   home: { name: string; logo: string }; away: { name: string; logo: string };
-  xgHome: number; xgAway: number; xCorners: number | null;
+  xgHome: number; xgAway: number; xCorners: number | null; exactScore: { score: string; prob: number };
   markets: Market[]; h2h: H2H[];
   h2hInfluence: { goalsAvg: number | null; cornersAvg: number | null; homeWins: number; draws: number; awayWins: number; weight: number };
 };
 
-async function analyze(fx: any, key: string): Promise<Analysis | null> {
+async function analyze(fx: any, key: string, showAll = false): Promise<Analysis | null> {
   const [pred] = await api<any>("/predictions", { fixture: fx.fixture.id }, key);
   if (!pred) return null;
   const th = pred.teams.home, ta = pred.teams.away;
@@ -93,8 +93,10 @@ async function analyze(fx: any, key: string): Promise<Analysis | null> {
 
   // Outcome probabilities via Poisson grid
   let pH = 0, pD = 0, pA = 0;
+  let best = { score: "0-0", prob: 0 };
   for (let i = 0; i <= 8; i++) for (let j = 0; j <= 8; j++) {
     const p = pois(i, lh) * pois(j, la);
+    if (p > best.prob) best = { score: `${i}-${j}`, prob: p };
     if (i > j) pH += p; else if (i === j) pD += p; else pA += p;
   }
   if (n) { pH = pH * (1 - w) + (hw / n) * w; pD = pD * (1 - w) + (dr / n) * w; pA = pA * (1 - w) + (aw / n) * w; }
@@ -115,14 +117,14 @@ async function analyze(fx: any, key: string): Promise<Analysis | null> {
     for (const line of [7.5, 8.5, 9.5]) markets.push({ label: `Plus de ${String(line).replace(".", ",")} corners`, prob: overProb(line, cornersAvg), group: "corners" });
     for (const line of [10.5, 11.5]) markets.push({ label: `Moins de ${String(line).replace(".", ",")} corners`, prob: 1 - overProb(line, cornersAvg), group: "corners" });
   }
-  const strong = markets.filter((m) => m.prob >= THRESHOLD);
+  const strong = showAll ? markets : markets.filter((m) => m.prob >= THRESHOLD);
   if (!strong.length) return null;
 
   return {
     id: fx.fixture.id, date: fx.fixture.date, league: fx.league.name, leagueLogo: fx.league.logo, country: fx.league.country,
     top: TOP_LEAGUE_IDS.has(fx.league.id),
     home: { name: hn, logo: fx.teams.home.logo }, away: { name: an, logo: fx.teams.away.logo },
-    xgHome: lh, xgAway: la, xCorners: cornersAvg,
+    xgHome: lh, xgAway: la, xCorners: cornersAvg, exactScore: best,
     markets: strong.sort((a, b) => b.prob - a.prob),
     h2h: h2hRaw.map((m, i) => ({
       date: m.fixture.date, home: m.teams.home.name, away: m.teams.away.name,
@@ -137,7 +139,7 @@ export type Fixture = { id: number; date: string; status: string; league: string
 const cache = new Map<string, { at: number; data: unknown }>();
 
 export async function analyzeDay(date: string, category: string, limit: number, key: string) {
-  const ck = `${date}|${category}|${limit}`;
+  const ck = `v2|${date}|${category}|${limit}`;
   const hit = cache.get(ck);
   if (hit && Date.now() - hit.at < 3600_000) return hit.data as { fixtures: Fixture[]; analyzed: number; total: number; matches: Analysis[] };
 
@@ -157,7 +159,7 @@ export async function analyzeDay(date: string, category: string, limit: number, 
   })).sort((a, b) => (b.top ? 1 : 0) - (a.top ? 1 : 0) || a.date.localeCompare(b.date));
   const results: Analysis[] = [];
   for (const fx of pool) {
-    try { const a = await analyze(fx, key); if (a) results.push(a); } catch (e) { console.error(e); }
+    try { const a = await analyze(fx, key, category === "top5"); if (a) results.push(a); } catch (e) { console.error(e); }
   }
   const data = { fixtures, analyzed: pool.length, total: all.length, matches: results.sort((a, b) => (b.top ? 1 : 0) - (a.top ? 1 : 0) || (b.markets[0]?.prob ?? 0) - (a.markets[0]?.prob ?? 0)) };
   cache.set(ck, { at: Date.now(), data });
