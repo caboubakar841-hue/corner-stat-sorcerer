@@ -143,7 +143,7 @@ export async function analyzeDay(date: string, category: string, limit: number, 
   const hit = cache.get(ck);
   if (hit && Date.now() - hit.at < 3600_000) return hit.data as { fixtures: Fixture[]; analyzed: number; total: number; matches: Analysis[] };
 
-  const all = await api<any>("/fixtures", { date, timezone: "Europe/Paris" }, key);
+  const all = await dayFixtures(date, key);
   const ids = LEAGUES[category];
   const inCat = all.filter((f) => !ids || ids.includes(f.league.id));
   const isTop = (f: any) => (TOP_LEAGUE_IDS.has(f.league.id) ? 1 : 0);
@@ -163,5 +163,41 @@ export async function analyzeDay(date: string, category: string, limit: number, 
   }
   const data = { fixtures, analyzed: pool.length, total: all.length, matches: results.sort((a, b) => (b.top ? 1 : 0) - (a.top ? 1 : 0) || (b.markets[0]?.prob ?? 0) - (a.markets[0]?.prob ?? 0)) };
   cache.set(ck, { at: Date.now(), data });
+  return data;
+}
+
+const fxCache = new Map<string, { at: number; data: any[] }>();
+async function dayFixtures(date: string, key: string) {
+  const hit = fxCache.get(date);
+  if (hit && Date.now() - hit.at < 3600_000) return hit.data;
+  const data = await api<any>("/fixtures", { date, timezone: "Europe/Paris" }, key);
+  fxCache.set(date, { at: Date.now(), data });
+  return data;
+}
+
+export async function countDays(dates: string[], category: string, key: string) {
+  const ids = LEAGUES[category];
+  const out: Record<string, number> = {};
+  for (const d of dates) {
+    try { out[d] = (await dayFixtures(d, key)).filter((f) => !ids || ids.includes(f.league.id)).length; } catch { out[d] = 0; }
+  }
+  return out;
+}
+
+const matchCache = new Map<number, { at: number; data: { fixture: Fixture; analysis: Analysis | null } }>();
+export async function matchDetail(id: number, key: string) {
+  const hit = matchCache.get(id);
+  if (hit && Date.now() - hit.at < 3600_000) return hit.data;
+  const [f] = await api<any>("/fixtures", { id, timezone: "Europe/Paris" }, key);
+  if (!f) throw new Error("Match introuvable.");
+  const fixture: Fixture = {
+    id: f.fixture.id, date: f.fixture.date, status: f.fixture.status.short, league: f.league.name, country: f.league.country,
+    top: TOP_LEAGUE_IDS.has(f.league.id), home: f.teams.home.name, away: f.teams.away.name,
+    homeLogo: f.teams.home.logo, awayLogo: f.teams.away.logo, gh: f.goals.home, ga: f.goals.away,
+  };
+  let analysis: Analysis | null = null;
+  try { analysis = await analyze(f, key, true); } catch (e) { console.error(e); }
+  const data = { fixture, analysis };
+  matchCache.set(id, { at: Date.now(), data });
   return data;
 }
