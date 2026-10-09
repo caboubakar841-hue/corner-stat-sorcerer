@@ -40,6 +40,15 @@ function Index() {
     staleTime: 30 * 60_000,
   });
 
+  // Si le chargement dépasse 60 s, afficher un message d'erreur explicite
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    setSlow(false);
+    if (!q.isLoading) return;
+    const t = setTimeout(() => setSlow(true), 60_000);
+    return () => clearTimeout(t);
+  }, [q.isLoading, q.dataUpdatedAt, date, cat]);
+
   return (
     <div className="min-h-screen font-sans">
       <header className="border-b border-border">
