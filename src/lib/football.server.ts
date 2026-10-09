@@ -159,7 +159,7 @@ export async function analyzeDay(date: string, category: string, limit: number, 
   for (const fx of pool) {
     try { const a = await analyze(fx, key); if (a) results.push(a); } catch (e) { console.error(e); }
   }
-  const data = { fixtures, analyzed: pool.length, total: all.length, matches: results.sort((a, b) => (b.markets[0]?.prob ?? 0) - (a.markets[0]?.prob ?? 0)) };
+  const data = { fixtures, analyzed: pool.length, total: all.length, matches: results.sort((a, b) => (b.top ? 1 : 0) - (a.top ? 1 : 0) || (b.markets[0]?.prob ?? 0) - (a.markets[0]?.prob ?? 0)) };
   cache.set(ck, { at: Date.now(), data });
   return data;
 }
