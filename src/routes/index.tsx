@@ -27,7 +27,7 @@ const CATS = [
 ] as const;
 
 const DAY_LABELS = ["Aujourd'hui", "Demain", "Après-demain", "J+3"];
-export const pct = (p: number) => `${Math.round(p * 100)}%`;
+const pct = (p: number) => `${Math.round(p * 100)}%`;
 
 function Index() {
   const [date, setDate] = useState("");
@@ -173,7 +173,7 @@ function FixtureList({ title, items }: { title: string; items: Fixture[] }) {
   );
 }
 
-export function MarketList({ items }: { items: Market[] }) {
+function MarketList({ items }: { items: Market[] }) {
   if (!items.length) return <p className="text-sm text-muted-foreground">Aucun pronostic ≥ 70%</p>;
   return (
     <ul className="space-y-2">
@@ -249,7 +249,7 @@ function MatchCard({ m }: { m: Analysis }) {
   );
 }
 
-export function Team({ name, logo, right }: { name: string; logo: string; right?: boolean }) {
+function Team({ name, logo, right }: { name: string; logo: string; right?: boolean }) {
   return (
     <div className={`flex items-center gap-3 ${right ? "flex-row-reverse text-right" : ""}`}>
       <img src={logo} alt="" className="h-10 w-10 object-contain" />
@@ -258,7 +258,7 @@ export function Team({ name, logo, right }: { name: string; logo: string; right?
   );
 }
 
-export function Block({ title, children }: { title: string; children: React.ReactNode }) {
+function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
       <h3 className="mb-2 font-display text-xl tracking-wide text-accent">{title}</h3>
