@@ -46,7 +46,7 @@ const num = (v: unknown, d = 0) => { const n = parseFloat(String(v ?? "")); retu
 export type Market = { label: string; prob: number; group: "winner" | "goals" | "corners" };
 export type H2H = { date: string; home: string; away: string; score: string; corners: number | null };
 export type Analysis = {
-  id: number; date: string; league: string; leagueLogo: string; country: string;
+  id: number; date: string; league: string; leagueLogo: string; country: string; top: boolean;
   home: { name: string; logo: string }; away: { name: string; logo: string };
   xgHome: number; xgAway: number; xCorners: number | null;
   markets: Market[]; h2h: H2H[];
@@ -120,6 +120,7 @@ async function analyze(fx: any, key: string): Promise<Analysis | null> {
 
   return {
     id: fx.fixture.id, date: fx.fixture.date, league: fx.league.name, leagueLogo: fx.league.logo, country: fx.league.country,
+    top: TOP_LEAGUE_IDS.has(fx.league.id),
     home: { name: hn, logo: fx.teams.home.logo }, away: { name: an, logo: fx.teams.away.logo },
     xgHome: lh, xgAway: la, xCorners: cornersAvg,
     markets: strong.sort((a, b) => b.prob - a.prob),
