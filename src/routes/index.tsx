@@ -74,8 +74,34 @@ function Index() {
       </header>
 
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-        {q.isLoading && <p className="text-muted-foreground">Analyse des matchs en cours… (cela peut prendre quelques secondes)</p>}
-        {q.data?.error && <p className="rounded-md border border-destructive p-4 text-destructive">{q.data.error}</p>}
+        {q.isLoading && !slow && (
+          <p className="text-muted-foreground">Analyse des matchs en cours… (cela peut prendre jusqu'à une minute)</p>
+        )}
+        {q.isLoading && slow && (
+          <div className="rounded-md border border-destructive bg-card p-6 text-center">
+            <p className="font-semibold text-destructive">Le chargement est plus long que prévu.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Les matchs ne se sont pas affichés après une minute. Le service de données est peut-être saturé ou votre quota de requêtes du jour est atteint.
+            </p>
+            <button
+              onClick={() => { setSlow(false); q.refetch(); }}
+              className="mt-4 rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Relancer le chargement
+            </button>
+          </div>
+        )}
+        {!q.isLoading && (q.data?.error || q.isError) && (
+          <div className="rounded-md border border-destructive bg-card p-6 text-center">
+            <p className="text-destructive">{q.data?.error ?? "Une erreur est survenue pendant le chargement des matchs."}</p>
+            <button
+              onClick={() => { setSlow(false); q.refetch(); }}
+              className="mt-4 rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Relancer le chargement
+            </button>
+          </div>
+        )}
         {q.data && !q.data.error && (
           <p className="text-sm text-muted-foreground">
             {q.data.analyzed} match(s) analysé(s) · {q.data.matches.length} avec au moins un pronostic ≥ 70%
