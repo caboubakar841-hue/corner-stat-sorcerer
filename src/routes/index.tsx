@@ -1,268 +1,71 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { getPredictions, getDayCounts } from "@/lib/football.functions";
-import type { Analysis, Market, Fixture } from "@/lib/football.server";
+import { dayKey, fixturesOn, nextFixture, predict } from "@/data/fixtures";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Prono70 — Pronostics football à plus de 70%" },
-      { name: "description", content: "Buts, vainqueur probable et corners calculés à partir de données réelles et des confrontations directes. Seulement les pronostics à 70% et plus." },
-      { property: "og:title", content: "Prono70 — Pronostics football à plus de 70%" },
-      { property: "og:description", content: "Buts, vainqueur et corners, uniquement à 70% de probabilité ou plus." },
+      { title: "Prono70 — Pronostics football Top 5" },
+      { name: "description", content: "Pronostics locaux des matchs du Top 5 européen sur 4 jours : vainqueur, score exact, buts attendus." },
+      { property: "og:title", content: "Prono70 — Pronostics football Top 5" },
+      { property: "og:description", content: "Pronostics locaux des matchs du Top 5 européen sur 4 jours." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: Index,
+  component: Home,
 });
 
-const CATS = [
-  { id: "top5", label: "Top 5 européens" },
-  { id: "europe", label: "Coupes d'Europe" },
-  { id: "afrique", label: "Afrique" },
-  { id: "tous", label: "Tous" },
-] as const;
+const LABELS = ["Aujourd'hui", "Demain", "Après-demain", "J+3"];
+const fmt = (key: string) => new Date(key + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+const relDay = (fromKey: string, iso: string) => {
+  const days = Math.round((new Date(iso.slice(0, 10) + "T12:00:00").getTime() - new Date(fromKey + "T12:00:00").getTime()) / 864e5);
+  return days === 1 ? "demain" : `le ${new Date(iso).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}`;
+};
 
-const DAY_LABELS = ["Aujourd'hui", "Demain", "Après-demain", "J+3"];
-const pct = (p: number) => `${Math.round(p * 100)}%`;
-
-function Index() {
-  const [date, setDate] = useState("");
-  const [cat, setCat] = useState<(typeof CATS)[number]["id"]>("tous");
-  const [days, setDays] = useState<string[]>([]);
-  useEffect(() => {
-    const ds = [0, 1, 2, 3].map((n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toLocaleDateString("en-CA"); });
-    setDays(ds); setDate(ds[0]!);
-  }, []);
-  const countFn = useServerFn(getDayCounts);
-  const counts = useQuery({
-    queryKey: ["counts", days, cat],
-    queryFn: () => countFn({ data: { dates: days, category: cat } }),
-    enabled: days.length === 4,
-    staleTime: 30 * 60_000,
-  });
-  const fn = useServerFn(getPredictions);
-  const q = useQuery({
-    queryKey: ["preds", date, cat],
-    queryFn: () => fn({ data: { date, category: cat } }),
-    enabled: !!date,
-    staleTime: 30 * 60_000,
-  });
-
-  // Si le chargement dépasse 60 s, afficher un message d'erreur explicite
-  const [slow, setSlow] = useState(false);
-  useEffect(() => {
-    setSlow(false);
-    if (!q.isLoading) return;
-    const t = setTimeout(() => setSlow(true), 60_000);
-    return () => clearTimeout(t);
-  }, [q.isLoading, q.dataUpdatedAt, date, cat]);
+function Home() {
+  const [base, setBase] = useState<Date | null>(null);
+  const [tab, setTab] = useState(0);
+  useEffect(() => setBase(new Date()), []);
+  if (!base) return null;
+  const keys = LABELS.map((_, i) => dayKey(i, base));
+  const key = keys[tab]!;
+  const list = fixturesOn(key);
+  const next = nextFixture(key);
 
   return (
-    <div className="min-h-screen font-sans">
-      <header className="border-b border-border">
-        <div className="mx-auto max-w-5xl px-4 py-8">
-          <p className="text-sm uppercase tracking-widest text-accent">Données réelles · seuil 70%</p>
-          <h1 className="font-display text-6xl leading-none text-primary md:text-8xl">Prono70</h1>
-          <p className="mt-2 max-w-xl text-muted-foreground">
-            Estimation des buts, du vainqueur probable et des corners. Seuls les pronostics avec au moins 70% de chance sont affichés.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {days.map((d, i) => (
-              <button
-                key={d} onClick={() => setDate(d)}
-                className={`rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${date === d ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card hover:bg-secondary"}`}
-              >
-                {DAY_LABELS[i]}{counts.data?.[d] != null && <span className="ml-1 opacity-75">({counts.data[d]})</span>}
-              </button>
-            ))}
-          </div>
-          {date && days.length > 0 && (
-            <p className="mt-3 font-display text-3xl tracking-wide text-primary">
-              {DAY_LABELS[days.indexOf(date)] ?? ""} - {new Date(date + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
-              {counts.data?.[date] != null && <span className="ml-2 text-lg text-muted-foreground">· {counts.data[date]} match(s)</span>}
-            </p>
-          )}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            {CATS.map((c) => (
-              <button
-                key={c.id} onClick={() => setCat(c.id)}
-                className={`rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${cat === c.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-secondary"}`}
-              >{c.label}</button>
-            ))}
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-        {q.isLoading && !slow && (
-          <p className="text-muted-foreground">Analyse des matchs en cours… (cela peut prendre jusqu'à une minute)</p>
-        )}
-        {q.isLoading && slow && (
-          <div className="rounded-md border border-destructive bg-card p-6 text-center">
-            <p className="font-semibold text-destructive">Le chargement est plus long que prévu.</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Les matchs ne se sont pas affichés après une minute. Le service de données est peut-être saturé ou votre quota de requêtes du jour est atteint.
-            </p>
-            <button
-              onClick={() => { setSlow(false); q.refetch(); }}
-              className="mt-4 rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-            >
-              Relancer le chargement
-            </button>
-          </div>
-        )}
-        {!q.isLoading && (q.data?.error || q.isError) && (
-          <div className="rounded-md border border-destructive bg-card p-6 text-center">
-            <p className="text-destructive">{q.data?.error ?? "Une erreur est survenue pendant le chargement des matchs."}</p>
-            <button
-              onClick={() => { setSlow(false); q.refetch(); }}
-              className="mt-4 rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-            >
-              Relancer le chargement
-            </button>
-          </div>
-        )}
-        {q.data && !q.data.error && (
-          <p className="text-sm text-muted-foreground">
-            {q.data.analyzed} match(s) analysé(s) · {q.data.matches.length} {cat === "top5" ? "affiché(s) · tous les pronostics" : "avec au moins un pronostic ≥ 70%"}
-          </p>
-        )}
-        {q.data && !q.data.error && q.data.matches.length === 0 && (
-          <p className="rounded-md border border-border bg-card p-6 text-center text-muted-foreground">
-            Aucun pronostic n'atteint 70% pour cette sélection. Essayez une autre date ou un autre championnat.
-          </p>
-        )}
-        {q.data?.matches.map((m) => <MatchCard key={m.id} m={m as Analysis} />)}
-        {q.data && !q.data.error && <FixtureList title="Tous les matchs du jour" items={(q.data.fixtures as Fixture[]).filter((f) => !FINISHED.includes(f.status))} />}
-        {q.data && !q.data.error && <FixtureList title="Historique · matchs terminés" items={(q.data.fixtures as Fixture[]).filter((f) => FINISHED.includes(f.status))} />}
-      </main>
-    </div>
-  );
-}
-
-const FINISHED = ["FT", "AET", "PEN"];
-const sofa = (h: string, a: string) => `https://www.google.com/search?q=${encodeURIComponent(`sofascore ${h} vs ${a}`)}&btnI=1`;
-
-function SofaLink({ h, a }: { h: string; a: string }) {
-  return <a href={sofa(h, a)} target="_blank" rel="noreferrer" className="rounded border border-accent px-2 py-0.5 text-xs font-semibold text-accent hover:bg-accent hover:text-accent-foreground">Sofascore ↗</a>;
-}
-
-function FixtureList({ title, items }: { title: string; items: Fixture[] }) {
-  return (
-    <section className="rounded-lg border border-border bg-card">
-      <h2 className="border-b border-border px-4 py-3 font-display text-3xl tracking-wide text-primary">{title} ({items.length})</h2>
-      {items.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Aucun match.</p> : (
-        <ul>
-          {items.map((f) => (
-            <li key={f.id} className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-2 text-sm first:border-t-0">
-              {f.top && <span title="Grand championnat">📌</span>}
-              <span className="w-12 text-muted-foreground">{new Date(f.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
-              <Link to="/match/$id" params={{ id: String(f.id) }} className="min-w-0 flex-1 hover:underline"><span className="font-semibold">{f.home}</span>{" "}<span className="font-bold text-accent">{f.gh != null ? `${f.gh} - ${f.ga}` : "vs"}</span>{" "}<span className="font-semibold">{f.away}</span><span className="block text-xs text-muted-foreground">{f.country} · {f.league} · {f.status}</span></Link>
-              <SofaLink h={f.home} a={f.away} />
-            </li>
-          ))}
+    <div className="mx-auto min-h-screen max-w-3xl space-y-6 px-4 py-8 font-sans">
+      <h1 className="font-display text-5xl tracking-wide text-primary">Prono70</h1>
+      <nav className="flex flex-wrap gap-2">
+        {LABELS.map((l, i) => (
+          <button key={l} onClick={() => setTab(i)}
+            className={`rounded-md border border-border px-3 py-2 text-sm font-semibold ${i === tab ? "bg-primary text-primary-foreground" : "bg-card hover:bg-secondary"}`}>
+            {l} ({fixturesOn(keys[i]!).length})
+          </button>
+        ))}
+      </nav>
+      <h2 className="font-display text-3xl text-accent">{LABELS[tab]} - {fmt(key)} · {list.length} match(s)</h2>
+      {list.length === 0 ? (
+        <p className="rounded-lg border border-border bg-card p-6 text-center">
+          Pas de Top 5 {tab === 0 ? "aujourd'hui" : "ce jour-là"}
+          {next && <> - Prochain match : <Link to="/match/$id" params={{ id: String(next.id) }} className="font-semibold text-primary underline">{next.home} vs {next.away}</Link> {relDay(key, next.date)}</>}
+        </p>
+      ) : (
+        <ul className="space-y-3">
+          {list.map((f) => {
+            const p = predict(f);
+            return (
+              <li key={f.id}>
+                <Link to="/match/$id" params={{ id: String(f.id) }} className="block rounded-lg border border-border bg-card p-4 hover:bg-secondary">
+                  <p className="text-xs uppercase text-muted-foreground">📌 {f.league} · {new Date(f.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</p>
+                  <p className="mt-1 text-lg font-semibold">{f.home} vs {f.away}</p>
+                  <p className="text-sm text-muted-foreground">Vainqueur : <b className="text-primary">{p.winner}</b> · Score : {p.score} · Confiance {p.confidence}%</p>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
-    </section>
-  );
-}
-
-function MarketList({ items }: { items: Market[] }) {
-  if (!items.length) return <p className="text-sm text-muted-foreground">Aucun pronostic ≥ 70%</p>;
-  return (
-    <ul className="space-y-2">
-      {items.map((it) => (
-        <li key={it.label}>
-          <div className="flex justify-between text-sm"><span>{it.label}</span><span className="font-bold text-primary">{pct(it.prob)}</span></div>
-          <div className="mt-1 h-1.5 rounded bg-muted"><div className="h-1.5 rounded bg-primary" style={{ width: pct(it.prob) }} /></div>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function MatchCard({ m }: { m: Analysis }) {
-  const g = (k: Market["group"]) => m.markets.filter((x) => x.group === k);
-  const time = new Date(m.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  const inf = m.h2hInfluence;
-  return (
-    <article className="overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-primary">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-2 text-xs uppercase tracking-wider text-muted-foreground">
-        {m.top && <span className="rounded bg-accent px-1.5 py-0.5 font-bold text-accent-foreground" title="Grand championnat">📌 Grand championnat</span>}
-        <img src={m.leagueLogo} alt="" className="h-4 w-4" /> {m.country} · {m.league} · {time}<span className="ml-auto normal-case"><SofaLink h={m.home.name} a={m.away.name} /></span>
-      </div>
-      <Link to="/match/$id" params={{ id: String(m.id) }} className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 py-5 hover:bg-secondary/40" title="Voir le détail du match">
-        <Team name={m.home.name} logo={m.home.logo} />
-        <div className="text-center">
-          <div className="font-display text-4xl text-accent">{m.xgHome.toFixed(1)} – {m.xgAway.toFixed(1)}</div>
-          <div className="text-xs text-muted-foreground">buts attendus</div>
-        </div>
-        <Team name={m.away.name} logo={m.away.logo} right />
-      </Link>
-
-      <div className="grid gap-4 border-t border-border p-4 md:grid-cols-3">
-        <div className="space-y-4">
-          <Block title="Vainqueur probable"><MarketList items={g("winner")} /></Block>
-          {m.exactScore && <Block title="Score exact probable"><div className="flex items-baseline justify-between"><span className="font-display text-4xl text-primary">{m.exactScore.score}</span><span className="text-sm text-muted-foreground">{pct(m.exactScore.prob)}</span></div></Block>}
-          </div>
-        <Block title={`Buts · ${(m.xgHome + m.xgAway).toFixed(2)} attendus`}><MarketList items={g("goals")} /></Block>
-        <Block title={`Corners · ${m.xCorners != null ? m.xCorners.toFixed(1) + " attendus" : "données insuffisantes"}`}><MarketList items={g("corners")} /></Block>
-      </div>
-
-      <div className="border-t border-border bg-secondary/40 p-4">
-        <h3 className="font-display text-2xl tracking-wide">Confrontations directes</h3>
-        {m.h2h.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucune confrontation récente — estimations basées uniquement sur la forme.</p>
-        ) : (
-          <>
-            <p className="mb-3 text-sm text-muted-foreground">
-              {m.home.name} : {inf.homeWins}V · {inf.draws}N · {inf.awayWins}D sur {m.h2h.length} matchs
-              {inf.goalsAvg != null && <> · {inf.goalsAvg.toFixed(1)} buts/match</>}
-              {inf.cornersAvg != null && <> · {inf.cornersAvg.toFixed(1)} corners/match</>}
-              . Influence sur les estimations : <span className="font-semibold text-accent">{Math.round(inf.weight * 100)}%</span> (buts et vainqueur), 100% (corners).
-            </p>
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-muted-foreground">
-                <tr><th className="py-1">Date</th><th>Match</th><th className="text-center">Score</th><th className="text-right">Corners</th></tr>
-              </thead>
-              <tbody>
-                {m.h2h.map((h, i) => (
-                  <tr key={i} className="border-t border-border">
-                    <td className="py-1.5">{new Date(h.date).toLocaleDateString("fr-FR")}</td>
-                    <td>{h.home} – {h.away} <SofaLink h={h.home} a={h.away} /></td>
-                    <td className="text-center font-bold">{h.score}</td>
-                    <td className="text-right">{h.corners ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
-      </div>
-    </article>
-  );
-}
-
-function Team({ name, logo, right }: { name: string; logo: string; right?: boolean }) {
-  return (
-    <div className={`flex items-center gap-3 ${right ? "flex-row-reverse text-right" : ""}`}>
-      <img src={logo} alt="" className="h-10 w-10 object-contain" />
-      <span className="font-semibold">{name}</span>
     </div>
-  );
-}
-
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h3 className="mb-2 font-display text-xl tracking-wide text-accent">{title}</h3>
-      {children}
-    </section>
   );
 }
