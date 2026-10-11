@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { matches, type Match } from "@/data/matches";
+import { matches } from "@/data/matches";
 
 export const Route = createFileRoute("/")({
   head: () => ({
