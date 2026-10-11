@@ -56,5 +56,3 @@ function Home() {
     </div>
   );
 }
-
-export type { Match };
