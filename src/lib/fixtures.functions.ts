@@ -114,7 +114,7 @@ export const getPrediction = createServerFn({ method: "GET" })
       { label: "Domicile ou Nul (1X)", pct: h + d }, { label: "Extérieur ou Nul (X2)", pct: a + d },
     ];
     // Prefer the straight win if strong enough, else best double chance
-    const win = h >= a ? opts[0] : opts[1];
+    const win = (h >= a ? opts[0] : opts[1])!;
     const result = win.pct >= 65 ? win : opts.slice(2).sort((x, y) => y.pct - x.pct)[0];
     const num = (v: any) => parseFloat(v) || 0;
     const th = r.teams?.home?.last_5?.goals, ta = r.teams?.away?.last_5?.goals;

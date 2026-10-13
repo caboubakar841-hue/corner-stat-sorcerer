@@ -108,7 +108,7 @@ function PickLine({ title, p }: { title: string; p: Pick }) {
   );
 }
 
-function Row({ m, a }: { m: Fx; a?: Analysis }) {
+function Row({ m, a }: { m: Fx; a: Analysis | undefined }) {
   const score = m.goalsHome != null ? `${m.goalsHome} - ${m.goalsAway}` : "vs";
   return (
     <li>
