@@ -131,10 +131,18 @@ function Row({ m, a }: { m: Fx; a: Analysis | undefined }) {
             </p>
           </div>
         </div>
-        {a && (a.result || a.safe) && (
+        {a && (a.result || a.safe || a.exact || a.btts) && (
           <div className="mt-2 space-y-1 border-t border-border pt-2">
             {a.result && <PickLine title="Prono 1X2" p={a.result} />}
             {a.safe && <PickLine title="Prono safe" p={a.safe} />}
+            {a.btts && <PickLine title="BTTS" p={a.btts} />}
+            {a.exact && (
+              <p className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="text-xs uppercase text-muted-foreground">Score exact</span>
+                <b className="text-accent">{a.exact.label}</b>
+                <span className="text-xs text-muted-foreground">({a.exact.pct}%)</span>
+              </p>
+            )}
           </div>
         )}
       </Link>
