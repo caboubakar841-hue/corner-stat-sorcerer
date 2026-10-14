@@ -89,7 +89,7 @@ export const getFixture = createServerFn({ method: "GET" })
   });
 
 export type Pick = { label: string; pct: number };
-export type Analysis = { id: number; result: Pick | null; safe: Pick | null; conf: number };
+export type Analysis = { id: number; result: Pick | null; safe: Pick | null; exact?: Pick | null; btts?: Pick | null; conf: number };
 
 const predCache = new Map<string, Analysis>();
 
@@ -106,7 +106,7 @@ export const getPrediction = createServerFn({ method: "GET" })
     if (c) return c;
     const r: any = (await call(`/predictions?fixture=${data.id}`))[0];
     const id = Number(data.id);
-    if (!r) return { id, result: null, safe: null, conf: 0 };
+    if (!r) return { id, result: null, safe: null, exact: null, btts: null, conf: 0 };
     const pc = (s: string) => parseInt(s ?? "0") || 0;
     const h = pc(r.predictions?.percent?.home), d = pc(r.predictions?.percent?.draw), a = pc(r.predictions?.percent?.away);
     const opts: Pick[] = [
@@ -123,10 +123,27 @@ export const getPrediction = createServerFn({ method: "GET" })
       ? (() => { const o15 = Math.round(poissonOver(lambda, 1) * 100), o25 = Math.round(poissonOver(lambda, 2) * 100);
           return o25 >= 70 ? { label: "Over 2.5 Buts", pct: o25 } : { label: "Over 1.5 Buts", pct: o15 }; })()
       : null;
+    const lh = (num(th?.for?.average) + num(ta?.against?.average)) / 2;
+    const la = (num(ta?.for?.average) + num(th?.against?.average)) / 2;
+    const pois = (l: number, k: number) => { let f = 1; for (let i = 2; i <= k; i++) f *= i; return (Math.exp(-l) * l ** k) / f; };
+    let exact: Pick | null = null;
+    let btts: Pick | null = null;
+    if (lh > 0 || la > 0) {
+      let best = { h: 0, a: 0, p: 0 };
+      for (let i = 0; i <= 5; i++) for (let j = 0; j <= 5; j++) {
+        const p = pois(lh, i) * pois(la, j);
+        if (p > best.p) best = { h: i, a: j, p };
+      }
+      exact = { label: `${best.h}-${best.a}`, pct: Math.round(best.p * 100) };
+      const yes = Math.round((1 - Math.exp(-lh)) * (1 - Math.exp(-la)) * 100);
+      btts = yes >= 50 ? { label: "Les deux marquent : OUI", pct: yes } : { label: "Les deux marquent : NON", pct: 100 - yes };
+    }
     const out: Analysis = {
       id,
       result: result && result.pct >= 65 ? result : null,
       safe: safe && safe.pct >= 65 ? safe : null,
+      exact,
+      btts,
       conf: Math.max(result?.pct ?? 0, safe?.pct ?? 0),
     };
     predCache.set(data.id, out);
