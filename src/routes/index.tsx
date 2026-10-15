@@ -1,15 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { getPrediction, getTodayFixtures, type Analysis, type Fx, type Pick } from "@/lib/fixtures.functions";
+import { getPrediction, getTodayFixtures, type Analysis, type Fx } from "@/lib/fixtures.functions";
+import { Picks, loadSaved, saveAnalyses } from "@/components/Picks";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Prono70 — Matchs de football du jour" },
-      { name: "description", content: "Tous les matchs de football du jour avec pronostics automatiques." },
+      { name: "description", content: "Tous les matchs de football du jour et d'hier avec pronostics automatiques." },
       { property: "og:title", content: "Prono70 — Matchs de football du jour" },
-      { property: "og:description", content: "Matchs du jour et pronostics à forte confiance, grands championnats en premier." },
+      { property: "og:description", content: "Matchs du jour, historique d'hier et pronostics à forte confiance." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/")({
 const PAGE = 50;
 const MAX_ANALYSES = 25; // protège le quota gratuit de 100 requêtes/jour
 const BATCH = 5;
+const FINISHED = ["FT", "AET", "PEN"];
 
 function heureGMT(iso: string) {
   return new Date(iso).toISOString().slice(11, 16);
@@ -27,19 +29,29 @@ function heureGMT(iso: string) {
 
 function Home() {
   const today = new Date().toISOString().split("T")[0];
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
+  const [day, setDay] = useState<"today" | "yesterday">("today");
+  const date = day === "today" ? today : yesterday;
   const [shown, setShown] = useState(PAGE);
   const [an, setAn] = useState<Record<number, Analysis>>({});
   const [busy, setBusy] = useState(false);
   const q = useQuery({
-    queryKey: ["fixtures", today],
-    queryFn: () => getTodayFixtures({ data: { date: today } }),
+    queryKey: ["fixtures", date],
+    queryFn: () => getTodayFixtures({ data: { date } }),
     staleTime: 5 * 60_000,
   });
   const list = q.data ?? [];
 
+  useEffect(() => { setAn(loadSaved()); }, []);
+
   useEffect(() => {
     if (!q.data) return;
-    const todo = q.data.filter((m) => m.status === "NS").slice(0, MAX_ANALYSES);
+    const saved = loadSaved();
+    // Today: matches not started or live. Yesterday: finished ones (historique).
+    const todo = q.data
+      .filter((m) => (day === "today" ? !FINISHED.includes(m.status) : FINISHED.includes(m.status)))
+      .filter((m) => !saved[m.id])
+      .slice(0, MAX_ANALYSES);
     let stop = false;
     (async () => {
       setBusy(true);
@@ -51,24 +63,33 @@ function Home() {
         setAn((prev) => {
           const n = { ...prev };
           res.forEach((r) => r.status === "fulfilled" && (n[r.value.id] = r.value));
+          saveAnalyses(n);
           return n;
         });
       }
       setBusy(false);
     })();
     return () => { stop = true; };
-  }, [q.data]);
+  }, [q.data, day]);
 
   const sorted = [...list].sort((a, b) => {
     const ta = (an[a.id]?.conf ?? 0) >= 75 ? 1 : 0, tb = (an[b.id]?.conf ?? 0) >= 75 ? 1 : 0;
     return tb - ta;
   });
 
+  const tab = (k: "today" | "yesterday", label: string) => (
+    <button
+      onClick={() => { setDay(k); setShown(PAGE); }}
+      className={`flex-1 rounded-md border border-border py-2 font-semibold ${day === k ? "bg-primary text-primary-foreground" : "bg-card hover:bg-secondary"}`}
+    >{label}</button>
+  );
+
   return (
     <div className="mx-auto min-h-screen max-w-3xl space-y-6 px-4 py-8 font-sans">
       <h1 className="font-display text-5xl tracking-wide text-primary">Prono70</h1>
-      <h2 className="font-display text-3xl text-accent">Aujourd'hui · {today} · {list.length} match(s)</h2>
-      {busy && <p className="animate-pulse rounded-lg border border-border bg-card p-3 text-center text-sm">Analyse en cours… ({Object.keys(an).length} analysés)</p>}
+      <div className="flex gap-2">{tab("yesterday", "Hier (historique)")}{tab("today", "Aujourd'hui")}</div>
+      <h2 className="font-display text-3xl text-accent">{day === "today" ? "Aujourd'hui" : "Hier"} · {date} · {list.length} match(s)</h2>
+      {busy && <p className="animate-pulse rounded-lg border border-border bg-card p-3 text-center text-sm">Analyse en cours…</p>}
       {q.isLoading && <p className="rounded-lg border border-border bg-card p-6 text-center">Chargement des matchs…</p>}
       {q.isError && (
         <div className="rounded-lg border border-destructive bg-card p-6 text-center">
@@ -77,7 +98,7 @@ function Home() {
         </div>
       )}
       {q.isSuccess && list.length === 0 && (
-        <p className="rounded-lg border border-border bg-card p-6 text-center">Aucun match aujourd'hui.</p>
+        <p className="rounded-lg border border-border bg-card p-6 text-center">Aucun match pour cette date.</p>
       )}
       <ul className="space-y-2">
         {sorted.slice(0, shown).map((m) => <Row key={m.id} m={m} a={an[m.id]} />)}
@@ -88,23 +109,6 @@ function Home() {
         </button>
       )}
     </div>
-  );
-}
-
-function badge(p: number) {
-  if (p > 70) return { t: "CONFIANCE ÉLEVÉE", c: "bg-primary text-primary-foreground" };
-  if (p >= 60) return { t: "MOYENNE", c: "bg-accent text-accent-foreground" };
-  return { t: "RISQUÉ", c: "bg-destructive text-destructive-foreground" };
-}
-
-function PickLine({ title, p }: { title: string; p: Pick }) {
-  const b = badge(p.pct);
-  return (
-    <p className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="text-xs uppercase text-muted-foreground">{title}</span>
-      <b className={p.pct > 70 ? "text-primary" : ""}>{p.label} - {p.pct}%</b>
-      <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${b.c}`}>{b.t}</span>
-    </p>
   );
 }
 
@@ -131,20 +135,7 @@ function Row({ m, a }: { m: Fx; a: Analysis | undefined }) {
             </p>
           </div>
         </div>
-        {a && (a.result || a.safe || a.exact || a.btts) && (
-          <div className="mt-2 space-y-1 border-t border-border pt-2">
-            {a.result && <PickLine title="Prono 1X2" p={a.result} />}
-            {a.safe && <PickLine title="Prono safe" p={a.safe} />}
-            {a.btts && <PickLine title="BTTS" p={a.btts} />}
-            {a.exact && (
-              <p className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="text-xs uppercase text-muted-foreground">Score exact</span>
-                <b className="text-accent">{a.exact.label}</b>
-                <span className="text-xs text-muted-foreground">({a.exact.pct}%)</span>
-              </p>
-            )}
-          </div>
-        )}
+        {a && <div className="mt-2 border-t border-border pt-2"><Picks a={a} /></div>}
       </Link>
     </li>
   );
