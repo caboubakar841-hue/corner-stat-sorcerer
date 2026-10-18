@@ -1,80 +1,94 @@
-import { createServerFn } from "@tanstack/react-start";
+ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 export const BIG_LEAGUES = [39, 140, 135, 78, 61, 2, 3, 307, 94];
 
 export type Fx = {
-  id: number;
-  date: string;
-  ts: number;
-  status: string;
-  statusLong: string;
-  elapsed: number | null;
-  league: string;
-  country: string;
-  leagueId: number;
-  leagueLogo: string;
-  home: string;
-  away: string;
-  homeLogo: string;
-  awayLogo: string;
-  goalsHome: number | null;
-  goalsAway: number | null;
-  big: boolean;
+  id: number; date: string; ts: number; status: string; statusLong: string;
+  elapsed: number | null; league: string; country: string; leagueId: number;
+  leagueLogo: string; home: string; away: string; homeLogo: string; awayLogo: string;
+  goalsHome: number | null; goalsAway: number | null; big: boolean;
 };
 
+// TES 3 CLES DIRECTEMENT DEDANS
+const DIRECT_KEYS = [
+  "fbbfb375986d02b3ae1f08d1eada9da5",
+  "baff2cce41d6e0e650350209d8266cfc",
+  "0a51259d070da43625df6bd84fac9973",
+];
+
+function getAllKeys(): string[] {
+  const envKeys = [
+    process.env["API_FOOTBALL_KEY_1"],
+    process.env["API_FOOTBALL_KEY_2"],
+    process.env["API_FOOTBALL_KEY_3"],
+    process.env["API_FOOTBALL_KEY"],
+  ].filter(Boolean) as string[];
+  return [...DIRECT_KEYS, ...envKeys.flatMap(k => k.split(",").map(s => s.trim()).filter(Boolean))];
+}
+
 async function call(path: string): Promise<any[]> {
-  const direct = process.env["API_FOOTBALL_KEY"];
+  const keys = getAllKeys();
   const rapid = process.env["RAPIDAPI_KEY"];
-  let res: Response | null = null;
-  if (direct) {
-    res = await fetch(`https://v3.football.api-sports.io${path}`, { headers: { "x-apisports-key": direct } });
+
+  for (const direct of keys) {
+    try {
+      const res = await fetch(`https://v3.football.api-sports.io${path}`, { 
+        headers: { "x-apisports-key": direct } 
+      });
+      const json: any = await res.json();
+      const errs = json?.errors && Object.values(json.errors).join(" ").toLowerCase();
+      if (errs && (errs.includes("limit") || errs.includes("requests") || errs.includes("rate"))) {
+        console.warn(`Clé ${direct.slice(0,5)}... à 100%, rotation`);
+        continue;
+      }
+      if (res.ok && json.response) return json.response;
+    } catch { continue; }
   }
-  if ((!res || !res.ok) && (rapid || direct)) {
-    res = await fetch(`https://api-football-v1.p.rapidapi.com/v3${path}`, {
-      headers: { "x-rapidapi-key": (rapid || direct)!, "x-rapidapi-host": "api-football-v1.p.rapidapi.com" },
-    });
+
+  if (rapid) {
+    try {
+      const res = await fetch(`https://api-football-v1.p.rapidapi.com/v3${path}`, {
+        headers: { "x-rapidapi-key": rapid, "x-rapidapi-host": "api-football-v1.p.rapidapi.com" },
+      });
+      const json = await res.json();
+      return json.response ?? [];
+    } catch {}
   }
-  if (!res) throw new Error("Clé API manquante");
-  const json: any = await res.json();
-  const errs = json?.errors && Object.values(json.errors);
-  if (errs && errs.length) throw new Error(String(errs[0]));
-  return json.response ?? [];
+
+  throw new Error("LIMIT_ATTEINTE");
 }
 
 function map(r: any): Fx {
   return {
-    id: r.fixture.id,
-    date: r.fixture.date,
-    ts: r.fixture.timestamp,
-    status: r.fixture.status.short,
-    statusLong: r.fixture.status.long,
-    elapsed: r.fixture.status.elapsed,
-    league: r.league.name,
-    country: r.league.country,
-    leagueId: r.league.id,
-    leagueLogo: r.league.logo,
-    home: r.teams.home.name,
-    away: r.teams.away.name,
-    homeLogo: r.teams.home.logo,
-    awayLogo: r.teams.away.logo,
-    goalsHome: r.goals.home,
-    goalsAway: r.goals.away,
+    id: r.fixture.id, date: r.fixture.date, ts: r.fixture.timestamp,
+    status: r.fixture.status.short, statusLong: r.fixture.status.long,
+    elapsed: r.fixture.status.elapsed, league: r.league.name,
+    country: r.league.country, leagueId: r.league.id, leagueLogo: r.league.logo,
+    home: r.teams.home.name, away: r.teams.away.name,
+    homeLogo: r.teams.home.logo, awayLogo: r.teams.away.logo,
+    goalsHome: r.goals.home, goalsAway: r.goals.away,
     big: BIG_LEAGUES.includes(r.league.id),
   };
 }
 
 const cache = new Map<string, { at: number; data: Fx[] }>();
+const CACHE_TTL = 6 * 60 * 60 * 1000;
 
 export const getTodayFixtures = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(d))
   .handler(async ({ data }) => {
     const c = cache.get(data.date);
-    if (c && Date.now() - c.at < 10 * 60_000) return c.data;
-    const list = (await call(`/fixtures?date=${data.date}&timezone=Africa/Abidjan`)).map(map);
-    list.sort((a, b) => Number(b.big) - Number(a.big) || a.ts - b.ts);
-    cache.set(data.date, { at: Date.now(), data: list });
-    return list;
+    if (c && Date.now() - c.at < CACHE_TTL) return c.data;
+    try {
+      const list = (await call(`/fixtures?date=${data.date}&timezone=Africa/Abidjan`)).map(map);
+      list.sort((a, b) => Number(b.big) - Number(a.big) || a.ts - b.ts);
+      cache.set(data.date, { at: Date.now(), data: list });
+      return list;
+    } catch (e: any) {
+      if (e.message === "LIMIT_ATTEINTE" && c) return c.data;
+      throw e;
+    }
   });
 
 export const getFixture = createServerFn({ method: "GET" })
@@ -113,7 +127,6 @@ export const getPrediction = createServerFn({ method: "GET" })
       { label: "Victoire Domicile", pct: h }, { label: "Victoire Extérieur", pct: a },
       { label: "Domicile ou Nul (1X)", pct: h + d }, { label: "Extérieur ou Nul (X2)", pct: a + d },
     ];
-    // Prefer the straight win if strong enough, else best double chance
     const win = (h >= a ? opts[0] : opts[1])!;
     const result = win.pct >= 65 ? win : opts.slice(2).sort((x, y) => y.pct - x.pct)[0];
     const num = (v: any) => parseFloat(v) || 0;
@@ -139,11 +152,8 @@ export const getPrediction = createServerFn({ method: "GET" })
       btts = yes >= 50 ? { label: "Les deux marquent : OUI", pct: yes } : { label: "Les deux marquent : NON", pct: 100 - yes };
     }
     const out: Analysis = {
-      id,
-      result: result && result.pct >= 65 ? result : null,
-      safe: safe && safe.pct >= 65 ? safe : null,
-      exact,
-      btts,
+      id, result: result && result.pct >= 65 ? result : null,
+      safe: safe && safe.pct >= 65 ? safe : null, exact, btts,
       conf: Math.max(result?.pct ?? 0, safe?.pct ?? 0),
     };
     predCache.set(data.id, out);
