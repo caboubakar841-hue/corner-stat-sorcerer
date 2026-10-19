@@ -1,7 +1,23 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-export const BIG_LEAGUES = [39, 140, 135, 78, 61, 2, 3, 848, 15, 88, 94, 307, 207, 5];
+// GRANDS CHAMPIONNATS = toujours en haut
+export const BIG_LEAGUES = [
+  39,  // Premier League
+  140, // La Liga
+  135, // Serie A
+  78,  // Bundesliga
+  61,  // Ligue 1
+  2,   // LDC
+  3,   // Europa League
+  848, // Conference League
+  94,  // Portugal
+  88,  // Pays-Bas
+  203, // Turquie
+  307, // Saudi Pro League
+  15,  // Mondial Clubs
+  5,   // Nations League
+];
 
 export type Fx = {
   id: number; date: string; ts: number; status: string; statusLong: string;
@@ -73,7 +89,7 @@ export const getTodayFixtures = createServerFn({ method: "GET" })
     if (c && c.data.length > 0 && Date.now() - c.at < CACHE_TTL) return c.data;
     try {
       const list = (await call(`/fixtures?date=${data.date}&timezone=Africa/Abidjan`)).map(map);
-      // TRI : GRANDS MATCHS D'ABORD, peu importe l'heure
+      // TRI FINAL : GRANDS TOUJOURS EN HAUT, PEU IMPORTE L'HEURE
       list.sort((a, b) => {
         if (a.big !== b.big) return Number(b.big) - Number(a.big);
         return a.ts - b.ts;
