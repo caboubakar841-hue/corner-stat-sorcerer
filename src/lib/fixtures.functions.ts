@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-export const BIG_LEAGUES = [39, 140, 135, 78, 61, 2, 3, 307, 94];
+export const BIG_LEAGUES = [39, 140, 135, 78, 61, 2, 3, 848, 15, 88, 94, 307, 207, 5];
 
 export type Fx = {
   id: number; date: string; ts: number; status: string; statusLong: string;
@@ -73,7 +73,11 @@ export const getTodayFixtures = createServerFn({ method: "GET" })
     if (c && c.data.length > 0 && Date.now() - c.at < CACHE_TTL) return c.data;
     try {
       const list = (await call(`/fixtures?date=${data.date}&timezone=Africa/Abidjan`)).map(map);
-      list.sort((a, b) => Number(b.big) - Number(a.big) || a.ts - b.ts);
+      // TRI : GRANDS MATCHS D'ABORD, peu importe l'heure
+      list.sort((a, b) => {
+        if (a.big !== b.big) return Number(b.big) - Number(a.big);
+        return a.ts - b.ts;
+      });
       if (list.length > 0) cache.set(data.date, { at: Date.now(), data: list });
       return list;
     } catch (e: any) {
