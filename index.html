@@ -1,62 +1,38 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PRONO70 V3.1 FIX</title><style>
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PRONO70 V3.2 TRI + LIGUES</title><style>
 body{font-family:system-ui;background:#0f1115;color:#fff;margin:0;padding:12px}
 h1{text-align:center;color:#00ff88} .sub{text-align:center;color:#8b90a0;font-size:11px;margin-bottom:10px}
 .controls{display:flex;gap:8px;justify-content:center;margin:10px 0;flex-wrap:wrap}
 input,button{padding:10px;border-radius:8px;border:none} button{background:#00ff88;font-weight:bold;color:#000}
 .tabs{display:flex;gap:8px;justify-content:center;margin:10px 0} .tab{padding:8px 14px;border-radius:20px;background:#252a38;color:#8b90a0;font-size:12px;cursor:pointer} .tab.active{background:#00ff88;color:#000;font-weight:bold}
 .card{background:#1c1f2a;border-radius:14px;padding:14px;margin:12px 0;border-left:4px solid #00ff88}
-.card.top{border-left-color:#ffd600} .card.fini{border-left-color:#555;opacity:.85}
-.league{color:#8b90a0;font-size:11px;display:flex;justify-content:space-between}
-.badge{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:bold;margin-left:5px} .badge.top{background:#ffd600;color:#000} .badge.live{background:#ff3b30;color:#fff} .badge.ser{background:#00ff88;color:#000} .badge.ecart{background:#ff8c00;color:#000}
+.card.top{border-left-color:#ffd600;box-shadow:0 0 12px #ffd60022} .card.fini{border-left-color:#555;opacity:.85}
+.league{color:#8b90a0;font-size:11px;display:flex;justify-content:space-between;align-items:center}
+.badge{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:bold;margin-left:5px} .badge.top{background:#ffd600;color:#000} .badge.live{background:#ff3b30;color:#fff} .badge.ser{background:#00ff88;color:#000} .badge.ecart{background:#ff8c00;color:#000} .badge.ligue{background:#3a3f55;color:#fff}
 .teams{font-size:16px;font-weight:bold;margin:7px 0}
 .preds{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
 .box{background:#252a38;padding:8px;border-radius:8px;text-align:center} .box.dc{background:linear-gradient(135deg,#252a38,#163a24);border:1px solid #00ff8855}
-.label{font-size:9px;color:#8b90a0;text-transform:uppercase} .val{font-weight:bold;font-size:12px;margin-top:2px} .conf{font-size:10px;color:#00ff88}
-.analyse{margin-top:9px;font-size:12px;color:#d1d4de;background:#252a38;padding:9px;border-radius:8px;line-height:1.4} .analyse b{color:#fff}
-.status{text-align:center;color:#8b90a0;font-size:11px;margin:6px}
+.label{font-size:9px;color:#8b90a0} .val{font-weight:bold;font-size:12px} .conf{font-size:10px;color:#00ff88}
+.analyse{margin-top:9px;font-size:12px;background:#252a38;padding:9px;border-radius:8px;line-height:1.4}
+.status{text-align:center;color:#8b90a0;font-size:11px}
 </style></head><body>
-<h1>PRONO70 V3.1 PRO ⚽</h1>
-<div class="sub">Serré <15% = Double Chance | Écart >25% = Victoire - FIX</div>
+<h1>PRONO70 V3.2 PRO ⚽</h1>
+<div class="sub">Tri TOP en haut + Vrai nom championnat</div>
 <div class="controls"><input type="date" id="datePicker"><button onclick="loadMatches()">Charger</button></div>
 <div class="tabs"><div class="tab active" id="tab-today" onclick="showTab('today')">Aujourd'hui (<span id="ct-today">0</span>)</div><div class="tab" id="tab-hist" onclick="showTab('hist')">Historique 24h (<span id="ct-hist">0</span>)</div></div>
 <div id="status" class="status"></div>
 <div id="today"></div><div id="hist" style="display:none"></div>
 <script>
-const PRIORITY={"Premier League":1,"English Premier League":1,"LaLiga":2,"Spanish LALIGA":2,"LALIGA":2,"La Liga":2,"Serie A":3,"Italian Serie A":3,"Bundesliga":4,"German Bundesliga":4,"Ligue 1":5,"French Ligue 1":5,"UEFA Champions League":6,"Champions League":6};
+const LEAGUES = [
+  {id:"eng.1", name:"Premier League", prio:1},
+  {id:"esp.1", name:"LaLiga", prio:2},
+  {id:"ita.1", name:"Serie A", prio:3},
+  {id:"ger.1", name:"Bundesliga", prio:4},
+  {id:"fra.1", name:"Ligue 1", prio:5},
+  {id:"uefa.champions", name:"Champions League", prio:6},
+  {id:"uefa.europa", name:"Europa League", prio:7},
+  {id:"all", name:"Autres Ligues", prio:99}
+];
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))&0xffffffff;return Math.abs(h)}
 function makePred(h,a,l,d,hmId,awId){
   const s=hash(h+a+l+d+hmId+awId); const r1=(s%100)/100, r2=((s*7)%100)/100, r3=((s*13)%100)/100, r4=((s*19)%100)/100;
-  let hw=0.50+(r1-0.5)*0.34+(r4-0.5)*0.12; let awP=0.30+(r2-0.5)*0.26; let dr=1-hw-awP; if(dr<0.18) dr=0.18; if(dr>0.32) dr=0.32;
-  const tot=hw+awP+dr; hw/=tot; awP/=tot; dr/=tot; const ecart=Math.abs(hw-awP)*100;
-  let victoire="",confV=0,dc="",dcConf=0,badgeType="",badgeText="";
-  if(ecart<15){badgeType="ser";badgeText=`SERRÉ ${ecart.toFixed(0)}%`; if(hw>=awP){victoire=`Avantage ${h}`;confV=hw;dc=`1X (${h} ou Nul)`;dcConf=hw+dr;}else{victoire=`Avantage ${a}`;confV=awP;dc=`X2 (${a} ou Nul)`;dcConf=awP+dr;}}
-  else if(ecart>=25){badgeType="ecart";badgeText=`ÉCART ${ecart.toFixed(0)}%`; if(hw>awP){victoire=`Victoire ${h}`;confV=hw;dc=`1X sécu`;dcConf=hw+dr;}else{victoire=`Victoire ${a}`;confV=awP;dc=`X2 sécu`;dcConf=awP+dr;}}
-  else{badgeType="ser";badgeText=`MOYEN ${ecart.toFixed(0)}%`; if(hw>awP){victoire=`Léger avantage ${h}`;confV=hw;dc=`1X (${h} ou Nul)`;dcConf=hw+dr;}else{victoire=`Léger avantage ${a}`;confV=awP;dc=`X2 (${a} ou Nul)`;dcConf=awP+dr;}}
-  const bttsProb=0.45+r3*0.3; const btts=bttsProb>0.52?"Oui":"Non"; const over=r1+r3>1.0; const butsLabel=over?"Plus 2.5":"Moins 2.5"; const detail=over?(r1>0.6?"3-4 buts":"2-3 buts"):"0-2 buts";
-  let score="1-1"; if(victoire.includes(h)) score=hw>0.55?"2-0":over?"2-1":"1-0"; else if(victoire.includes(a)) score=awP>0.45?"0-2":"1-2";
-  const analyse=`<b>[${l}]</b> ${ecart<15?`Match serré (${ecart.toFixed(0)}%). Perf égales. On sécurise avec <b>${dc}</b>.`:`Écart ${ecart.toFixed(0)}%. ${hw>awP?h+' domine':'Avantage extérieur'}.`} <b>Conseil: ${ecart<15?dc:victoire}</b> Score ${score}.`;
-  return {victoire,confV:Math.round(confV*100),dc,dcConf:Math.round(dcConf*100),btts,bttsC:Math.round(bttsProb*100),butsLabel,detail,score,analyse,hw:Math.round(hw*100),aw:Math.round(awP*100),dr:Math.round(dr*100),ecart:Math.round(ecart),badgeType,badgeText}
-}
-function saveHist(html,id){let h=JSON.parse(localStorage.getItem('p70v3')||'[]'); if(h.find(x=>x.id===id)) return; h.unshift({id,html,ts:Date.now()}); h=h.filter(x=>Date.now()-x.ts<24*60*60*1000).slice(0,60); localStorage.setItem('p70v3',JSON.stringify(h));}
-function renderHist(){const el=document.getElementById('hist'); let h=JSON.parse(localStorage.getItem('p70v3')||'[]'); h=h.filter(x=>Date.now()-x.ts<24*60*60*1000); localStorage.setItem('p70v3',JSON.stringify(h)); document.getElementById('ct-hist').textContent=h.length; el.innerHTML=h.length?h.map(x=>x.html).join(''):'<div class="card">Aucun historique.</div>';}
-function showTab(t){document.getElementById('tab-today').classList.toggle('active',t==='today'); document.getElementById('tab-hist').classList.toggle('active',t==='hist'); document.getElementById('today').style.display=t==='today'?'block':'none'; document.getElementById('hist').style.display=t==='hist'?'block':'none';}
-async function loadMatches(){
-  let d=document.getElementById('datePicker').value; if(!d){d=new Date().toISOString().split('T')[0]; document.getElementById('datePicker').value=d;}
-  const st=document.getElementById('status'); const todayEl=document.getElementById('today'); st.textContent="Chargement "+d+"..."; todayEl.innerHTML="";
-  try{
-    const r=await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard?dates=${d.replace(/-/g,'')}`); const j=await r.json(); let ev=j.events||[];
-    if(!ev.length){todayEl.innerHTML=`<div class="card">Aucun match pour ${d}. Essaie hier/demain.</div>`; st.textContent="0 match ESPN"; document.getElementById('ct-today').textContent=0; return;}
-    ev.sort((a,b)=>{const la=a.leagues?.[0]?.name||"zzz",lb=b.leagues?.[0]?.name||"zzz"; return (PRIORITY[la]||99)-(PRIORITY[lb]||99)||new Date(a.date)-new Date(b.date);});
-    st.textContent=`${ev.length} matchs`; let htmlToday="";
-    ev.forEach(e=>{
-      const comp=e.competitions[0]; const hm=comp.competitors.find(c=>c.homeAway==='home')||comp.competitors[0]; const aw=comp.competitors.find(c=>c.homeAway==='away')||comp.competitors[1];
-      const lg=e.leagues?.[0]?.name||"Autre"; const tm=new Date(e.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Abidjan'});
-      const isFini=comp.status?.type?.state==="post"; const isLive=comp.status?.type?.state==="in"; const pr=makePred(hm.team.displayName,aw.team.displayName,lg,d,hm.id,aw.id); const isTop=(PRIORITY[lg]||99)<=5;
-      const card=`<div class="card ${isFini?'fini':isTop?'top':''}"><div class="league"><span>${lg} ${isTop?'<span class="badge top">TOP</span>':''} <span class="badge ${pr.badgeType}">${pr.badgeText}</span> ${isLive?'<span class="badge live">LIVE</span>':''} ${isFini?'<span class="badge" style="background:#555;color:#fff">FINI '+hm.score+'-'+aw.score+'</span>':''}</span><span>${tm}</span></div><div class="teams">${hm.team.displayName} vs ${aw.team.displayName}</div><div style="font-size:10px;color:#8b90a0">[${lg}] ${hm.team.displayName} _ ${aw.team.displayName}</div><div class="preds"><div class="box"><div class="label">${pr.ecart<15?'Avantage serré':'Victoire'}</div><div class="val">${pr.victoire}</div><div class="conf">${pr.confV}% H${pr.hw} N${pr.dr} A${pr.aw}</div></div><div class="box dc"><div class="label">Double Chance ⭐</div><div class="val">${pr.dc}</div><div class="conf">${pr.dcConf}% ${pr.ecart<15?'CONSEILLÉE':'SÉCU'}</div></div><div class="box"><div class="label">BTTS</div><div class="val">${pr.btts}</div><div class="conf">${pr.bttsC}%</div></div><div class="box"><div class="label">Buts</div><div class="val">${pr.butsLabel}</div><div class="conf">${pr.detail}</div></div><div class="box" style="grid-column:span 2"><div class="label">Score</div><div class="val" style="font-size:20px">${pr.score}</div></div></div><div class="analyse">${pr.analyse}</div></div>`;
-      if(isFini) saveHist(card,e.id); else htmlToday+=card;
-    });
-    todayEl.innerHTML=htmlToday||'<div class="card">Tous finis - voir Historique</div>'; document.getElementById('ct-today').textContent=(htmlToday.match(/class="card/g)||[]).length; renderHist();
-  }catch(err){document.getElementById('status').textContent="Erreur "+err.message}
-}
-(function init(){const dp=document.getElementById('datePicker'); const todayISO=new Date().toISOString().split('T')[0]; dp.value=todayISO; renderHist(); loadMatches();})();
-</script></body></html>
+  let hw=0.50+(r1-0.5)*0.34+(r4-0.5)*0.12; let awP=0.30+(r2-
