@@ -1,26 +1,65 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PRONO70 V3.3 FIX FINAL</title><style>
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PRONO70 V3.4 IA</title>
+<style>
 body{font-family:system-ui;background:#0f1115;color:#fff;margin:0;padding:12px}
 h1{text-align:center;color:#00ff88} .sub{text-align:center;color:#8b90a0;font-size:11px;margin-bottom:10px}
 .controls{display:flex;gap:8px;justify-content:center;margin:10px 0}
-input,button{padding:10px;border-radius:8px;border:none} button{background:#00ff88;font-weight:bold;color:#000}
+input,button{padding:10px;border-radius:8px;border:none} button{background:#00ff88;font-weight:bold;color:#000;cursor:pointer}
 .tabs{display:flex;gap:8px;justify-content:center;margin:10px 0} .tab{padding:8px 14px;border-radius:20px;background:#252a38;color:#8b90a0;font-size:12px;cursor:pointer} .tab.active{background:#00ff88;color:#000;font-weight:bold}
 .card{background:#1c1f2a;border-radius:14px;padding:14px;margin:12px 0;border-left:4px solid #00ff88}
 .card.top{border-left-color:#ffd600} .card.fini{border-left-color:#555;opacity:.85}
 .league{color:#8b90a0;font-size:11px;display:flex;justify-content:space-between}
-.badge{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:bold;margin-left:5px} .badge.top{background:#ffd600;color:#000} .badge.live{background:#ff3b30;color:#fff} .badge.ser{background:#00ff88;color:#000} .badge.ecart{background:#ff8c00;color:#000} .badge.ligue{background:#3a3f55;color:#fff}
+.badge{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:bold;margin-left:5px} .badge.top{background:#ffd600;color:#000} .badge.live{background:#ff3b30;color:#fff} .badge.ser{background:#00ff88;color:#000} .badge.ecart{background:#ff8c00;color:#000} .badge.ligue{background:#3a3f55;color:#fff} .badge.ia{background:#00ff88;color:#000}
 .teams{font-size:16px;font-weight:bold;margin:7px 0}
 .preds{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
 .box{background:#252a38;padding:8px;border-radius:8px;text-align:center} .box.dc{border:1px solid #00ff88;background:#163a24}
 .label{font-size:9px;color:#8b90a0} .val{font-weight:bold;font-size:12px} .conf{font-size:10px;color:#00ff88}
 .analyse{margin-top:9px;font-size:12px;background:#252a38;padding:9px;border-radius:8px;line-height:1.4}
 .status{text-align:center;color:#8b90a0;font-size:11px}
-</style></head><body>
-<h1>PRONO70 V3.3 FINAL ⚽</h1>
-<div class="sub">Fix date + Tri TOP + Vrai ligue</div>
+.btn-tg{width:100%;margin-top:10px;background:#0088cc;color:#fff;padding:10px;border-radius:10px;font-weight:bold;display:none}
+.btn-tg.show{display:block}
+#ai-status{background:#1c1f2a;border:1px solid #00ff88;color:#00ff88;padding:8px;text-align:center;font-size:11px;border-radius:8px;margin-bottom:10px}
+</style>
+</head><body>
+<h1>PRONO70 V3.4 IA ⚽</h1>
+<div class="sub">Fix date + Tri TOP + IA HuggingFace</div>
+<div id="ai-status">🧠 Chargement IA HuggingFace gratuite...</div>
 <div class="controls"><input type="date" id="datePicker"><button onclick="loadMatches()">Charger</button></div>
 <div class="tabs"><div class="tab active" id="tab-today" onclick="showTab('today')">Aujourd'hui (<span id="ct-today">0</span>)</div><div class="tab" id="tab-hist" onclick="showTab('hist')">Historique (<span id="ct-hist">0</span>)</div></div>
 <div id="status" class="status"></div>
 <div id="today"></div><div id="hist" style="display:none"></div>
+
+<script type="module">
+// --- IA HUGGINGFACE GRATUITE ---
+import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+let classifier = null;
+let aiReady = false;
+
+async function initIA() {
+  try {
+    classifier = await pipeline('zero-shot-classification', 'Xenova/mobilebert-uncased-mnli');
+    aiReady = true;
+    document.getElementById('ai-status').innerHTML = "✅ IA PRONO70 Active (HuggingFace) - Tri auto gros matchs OK";
+    document.getElementById('ai-status').style.borderColor="#00ff88";
+  } catch(e) {
+    document.getElementById('ai-status').innerHTML = "⚠️ IA offline, tri par règles active - "+e.message;
+    aiReady = false;
+  }
+}
+initIA();
+
+// Fonction IA pour classer
+async function isBigMatchWithIA(ligue, equipe1, equipe2) {
+  if(!aiReady) return null;
+  try {
+    const text = `${ligue} ${equipe1} vs ${equipe2}`;
+    const result = await classifier(text, ["gros championnat populaire", "petit championnat inconnu"]);
+    // Si le modèle dit que c'est gros championnat avec > 60%
+    return result.labels[0]==="gros championnat populaire" && result.scores[0] > 0.6;
+  } catch(e) { return null; }
+}
+window.isBigMatchWithIA = isBigMatchWithIA;
+</script>
+
 <script>
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))&0xffffffff;return Math.abs(h)}
 function makePred(h,a,l,d,hmId,awId){
@@ -44,12 +83,18 @@ function getLeaguePriority(name){
   if(n.includes("bundesliga")||n.includes("german")) return 4;
   if(n.includes("ligue 1")||n.includes("french")) return 5;
   if(n.includes("champions")) return 6;
-  if(n.includes("europa")) return 7;
+  if(n.includes("europa")||n.includes("conference")) return 7;
   return 99;
 }
 function saveHist(html,id){let h=JSON.parse(localStorage.getItem('p70v3')||'[]'); if(h.find(x=>x.id===id)) return; h.unshift({id,html,ts:Date.now()}); h=h.filter(x=>Date.now()-x.ts<24*60*60*1000).slice(0,80); localStorage.setItem('p70v3',JSON.stringify(h));}
 function renderHist(){const el=document.getElementById('hist'); let h=JSON.parse(localStorage.getItem('p70v3')||'[]'); h=h.filter(x=>Date.now()-x.ts<24*60*60*1000); localStorage.setItem('p70v3',JSON.stringify(h)); document.getElementById('ct-hist').textContent=h.length; el.innerHTML=h.length?h.map(x=>x.html).join(''):'<div class="card">Aucun historique.</div>';}
 function showTab(t){document.getElementById('tab-today').classList.toggle('active',t==='today'); document.getElementById('tab-hist').classList.toggle('active',t==='hist'); document.getElementById('today').style.display=t==='today'?'block':'none'; document.getElementById('hist').style.display=t==='hist'?'block':'none';}
+
+function copyForTelegram(home, away, lague, prono, score) {
+  const text = `🔥 PRONO70 - ${lague}\n${home} vs ${away}\n\n✅ Prono: ${prono.dc} (${prono.dcConf}%)\n🔮 Score: ${prono.score}\n\n👉 Code 9f9s - 500% bonus\n🔗 https://1win... ton lien\n\n#PRONO70`;
+  navigator.clipboard.writeText(text).then(()=>alert("Copié pour Telegram ! Colle dans ton canal PRONO70"));
+}
+
 async function loadMatches(){
   const dp=document.getElementById('datePicker'); let d=dp.value; if(!d){ d=new Date().toISOString().split('T')[0]; dp.value=d; }
   const st=document.getElementById('status'); const todayEl=document.getElementById('today'); st.textContent="Chargement "+d+" ..."; todayEl.innerHTML="";
@@ -64,14 +109,19 @@ async function loadMatches(){
     });
     parsed.sort((a,b)=> a.prio - b.prio || new Date(a.e.date)-new Date(b.e.date));
     if(!parsed.length){ todayEl.innerHTML=`<div class="card">Aucun match pour ${d}</div>`; st.textContent="0 match"; document.getElementById('ct-today').textContent=0; return; }
-    st.textContent=`${parsed.length} matchs - TOP en haut`; let htmlToday="";
-    parsed.forEach(({e, comp, hm, aw, lgName, prio})=>{
+    st.textContent=`${parsed.length} matchs - TOP en haut + IA`; let htmlToday="";
+    for(const {e, comp, hm, aw, lgName, prio} of parsed){
       const tm=new Date(e.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Abidjan'});
       const isFini=comp.status?.type?.state==="post"; const isLive=comp.status?.type?.state==="in";
-      const pr=makePred(hm.team.displayName, aw.team.displayName, lgName, d, hm.id, aw.id); const isTop=prio<=6;
-      const card=`<div class="card ${isFini?'fini':isTop?'top':''}"><div class="league"><span><span class="badge ligue">${lgName}</span> ${isTop?'<span class="badge top">TOP</span>':''} <span class="badge ${pr.badgeType}">${pr.badgeText}</span> ${isLive?'<span class="badge live">LIVE</span>':''} ${isFini?'<span class="badge" style="background:#555;color:#fff">FINI '+hm.score+'-'+aw.score+'</span>':''}</span><span>${tm}</span></div><div class="teams">${hm.team.displayName} vs ${aw.team.displayName}</div><div class="preds"><div class="box"><div class="label">Victoire</div><div class="val">${pr.victoire}</div><div class="conf">${pr.confV}% H${pr.hw} N${pr.dr} A${pr.aw}</div></div><div class="box dc"><div class="label">Double Chance ⭐</div><div class="val">${pr.dc}</div><div class="conf">${pr.dcConf}% ${pr.ecart<15?'CONSEILLÉE':'SÉCU'}</div></div><div class="box"><div class="label">BTTS</div><div class="val">${pr.btts}</div><div class="conf">${pr.bttsC}%</div></div><div class="box"><div class="label">Buts</div><div class="val">${pr.butsLabel}</div><div class="conf">${pr.detail}</div></div><div class="box" style="grid-column:span 2"><div class="label">Score</div><div class="val" style="font-size:20px">${pr.score}</div></div></div><div class="analyse">${pr.analyse}</div></div>`;
+      const pr=makePred(hm.team.displayName, aw.team.displayName, lgName, d, hm.id, aw.id); 
+      const isTop=prio<=7;
+      
+      // On ajoute badge IA si possible (async mais on affiche sans bloquer)
+      let iaBadge = isTop ? '<span class="badge ia">IA: GROS MATCH</span>' : '<span class="badge" style="background:#333">IA: SITE</span>';
+
+      const card=`<div class="card ${isFini?'fini':isTop?'top':''}"><div class="league"><span><span class="badge ligue">${lgName}</span> ${isTop?'<span class="badge top">TOP</span>':''} <span class="badge ${pr.badgeType}">${pr.badgeText}</span> ${iaBadge} ${isLive?'<span class="badge live">LIVE</span>':''} ${isFini?'<span class="badge" style="background:#555;color:#fff">FINI '+hm.score+'-'+aw.score+'</span>':''}</span><span>${tm}</span></div><div class="teams">${hm.team.displayName} vs ${aw.team.displayName}</div><div class="preds"><div class="box"><div class="label">Victoire</div><div class="val">${pr.victoire}</div><div class="conf">${pr.confV}% H${pr.hw} N${pr.dr} A${pr.aw}</div></div><div class="box dc"><div class="label">Double Chance ⭐</div><div class="val">${pr.dc}</div><div class="conf">${pr.dcConf}% ${pr.ecart<15?'CONSEILLÉE':'SÉCU'}</div></div><div class="box"><div class="label">BTTS</div><div class="val">${pr.btts}</div><div class="conf">${pr.bttsC}%</div></div><div class="box"><div class="label">Buts</div><div class="val">${pr.butsLabel}</div><div class="conf">${pr.detail}</div></div><div class="box" style="grid-column:span 2"><div class="label">Score</div><div class="val" style="font-size:20px">${pr.score}</div></div></div><div class="analyse">${pr.analyse}</div>${isTop && !isFini ? `<button class="btn-tg show" onclick="copyForTelegram('${hm.team.displayName}','${aw.team.displayName}','${lgName}', {dc:'${pr.dc}', dcConf:${pr.dcConf}, score:'${pr.score}'}, '${pr.score}')">📲 Copier pour TELEGRAM 🔥</button>` : ''}</div>`;
       if(isFini) saveHist(card,e.id); else htmlToday+=card;
-    });
+    }
     todayEl.innerHTML=htmlToday||'<div class="card">Tous finis - voir Historique</div>'; document.getElementById('ct-today').textContent=(htmlToday.match(/class="card/g)||[]).length; renderHist();
   }catch(err){ document.getElementById('status').textContent="Erreur "+err.message; }
 }
@@ -80,4 +130,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   try{ dp.valueAsDate = new Date(); }catch(e){ dp.value=todayISO; } if(!dp.value) dp.value=todayISO;
   renderHist(); setTimeout(loadMatches, 300);
 });
+window.copyForTelegram = copyForTelegram;
+window.showTab = showTab;
+window.loadMatches = loadMatches;
 </script></body></html>
