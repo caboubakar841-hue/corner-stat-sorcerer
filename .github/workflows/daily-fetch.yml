@@ -1,0 +1,24 @@
+name: Fetch Real Form Daily
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Fetch and build cache
+        env:
+          API_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          mkdir -p data
+          curl -s --request GET --url "https://v3.football.api-sports.io/fixtures?date=$(date +%Y-%m-%d)" --header "x-apisports-key: $API_KEY" -o data/data.json
+          ls -lh data/
+      - name: Commit
+        run: |
+          git config user.name "PRONO BOT"
+          git config user.email "bot@prono70.com"
+          git add data/data.json
+          git commit -m "daily cache $(date)" || echo "no change"
+          git push
