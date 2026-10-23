@@ -1,0 +1,69 @@
+name: AI Prono V9
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+jobs:
+  ai-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install
+        run: pip install requests openai
+      - name: Run AI Analysis
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          import requests, json, os, datetime
+          from openai import OpenAI
+          
+          api_key = os.environ.get('API_FOOTBALL_KEY')
+          openai_key = os.environ.get('OPENAI_API_KEY')
+          client = OpenAI(api_key=openai_key)
+          headers = {"x-apisports-key": api_key}
+          today = datetime.date.today().isoformat()
+          
+          url = f"https://v3.football.api-sports.io/fixtures?date={today}"
+          r = requests.get(url, headers=headers)
+          fixtures = r.json().get('response', [])[:15]
+          preds = []
+          
+          for fix in fixtures:
+            home = fix['teams']['home']['name']
+            away = fix['teams']['away']['name']
+            league = fix['league']['name']
+            home_id = fix['teams']['home']['id']
+            away_id = fix['teams']['away']['id']
+            
+            def get_last5(tid):
+              try:
+                u = f"https://v3.football.api-sports.io/fixtures?team={tid}&last=5"
+                rr = requests.get(u, headers=headers).json()
+                hist=[]
+                for m in rr.get('response',[]):
+                  opp = m['teams']['away']['name'] if m['teams']['home']['id']==tid else m['teams']['home']['name']
+                  hist.append(f"{opp} {m['goals']['home']}-{m['goals']['away']}")
+                return ", ".join(hist)
+              except:
+                return "N/A"
+            
+            h_hist = get_last5(home_id)
+            a_hist = get_last5(away_id)
+            
+            prompt = f"""Match: {home} vs {away} - {league}
+            {home} 5 derniers: {h_hist}
+            {away} 5 derniers: {a_hist}
+            Réponds UNIQUEMENT en JSON: {{"double_chance":"1X","dc_conf":65,"btts":"OUI","btts_conf":68,"score_exact":"1-1","victoire":null,"analyse":"analyse courte"}}
+            REGLE CRITIQUE: Si score_exact est 1-1, 2-1, 1-2, 2-2 alors btts doit être OUI. Si 1-0, 2-0, 0-1 alors NON."""
+            
+            try:
+              ai = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role":"user","content":prompt}], temperature=0.6)
+              txt = ai.choices[0].message.content.replace("```json","").replace("```","").strip()
+              data = json.loads(txt)
+            except Exception as e:
+              print(f"Erreur {home}: {e}")
+              data = {"double_chance":"1X","dc_conf":55,"btts":"OUI","b
