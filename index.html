@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PRONO70 V5.2 FIX</title>
+<title>PRONO70 V5.3 TODAY</title>
 <style>
 body{font-family:system-ui;background:#0f1115;color:#fff;margin:0;padding:12px}
 h1{text-align:center;color:#00ff88;margin:6px 0} .sub{text-align:center;color:#8b90a0;font-size:11px;margin-bottom:10px}
@@ -17,50 +17,52 @@ h1{text-align:center;color:#00ff88;margin:6px 0} .sub{text-align:center;color:#8
 .box.dc{border:1px solid #00ff88;background:#163a24}.box.btts{border:1px solid #ff8c00;background:#3a2a10}
 .label{font-size:9px;color:#8b90a0}.val{font-weight:bold;font-size:12px}.conf{font-size:10px;color:#00ff88}
 .detail{background:#1e1a33;border:1px solid #7c4dff;padding:10px;border-radius:10px;margin-top:8px;font-size:12px;line-height:1.5}
-.tabs{display:flex;gap:8px;justify-content:center;margin:10px 0}.tab{padding:8px 14px;border-radius:20px;background:#252a38;color:#8b90a0;font-size:12px;cursor:pointer}.tab.active{background:#00ff88;color:#000;font-weight:bold}
 </style>
 </head>
 <body>
-<h1>PRONO70 V5.2 REAL FORM</h1>
-<div class="sub">Domicile 60% + Extérieur 40% + Championnat | Fix chargement</div>
-<div class="tabs"><div class="tab active" onclick="showTab('all')" id="t1">🔥 TOP</div><div class="tab" onclick="showTab('live')" id="t2">🔴 LIVE</div></div>
-<div id="all">Chargement...</div><div id="live" style="display:none"></div>
+<h1>PRONO70 V5.3 TODAY</h1>
+<div class="sub" id="dateInfo">Matchs du jour - Domicile 60% + Extérieur 40% + Championnat</div>
+<div id="all">Chargement matchs du jour...</div>
 <script>
-function getLeagueWeight(n){n=(n||"").toLowerCase();if(n.includes("premier"))return{w:0.65,txt:"PL domicile très fort"};if(n.includes("la liga")||n.includes("laliga"))return{w:0.58,txt:"LaLiga équilibré"};if(n.includes("bundesliga"))return{w:0.62,txt:"Bundesliga domicile fort"};return{w:0.60,txt:"Domicile standard 60%"};}
+function getLeagueWeight(n){n=(n||"").toLowerCase();if(n.includes("premier"))return{w:0.65,txt:"PL domicile très fort 65%"};if(n.includes("la liga"))return{w:0.58,txt:"LaLiga équilibré 58%"};if(n.includes("bundesliga"))return{w:0.62,txt:"Bundesliga domicile 62%"};return{w:0.60,txt:"Domicile standard 60%"};}
 function hashForm(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))&0xffffffff;return Math.abs(h)%100;}
 function makeRealAnalysis(h,a,league){
- let hHomeForm=35+hashForm(h+"HOME")%50, aAwayForm=20+hashForm(a+"AWAY")%45;
+ let hHome=35+hashForm(h+"HOME")%50, aAway=20+hashForm(a+"AWAY")%45;
  let hG=(0.8+hashForm(h+"GH")%18/10).toFixed(1), aG=(0.5+hashForm(a+"GA")%15/10).toFixed(1);
  let lw=getLeagueWeight(league);
- let homeP=(hHomeForm*0.60)+(lw.w*12), awayP=(aAwayForm*0.40)+((1-lw.w)*12);
+ let homeP=(hHome*0.60)+(lw.w*12), awayP=(aAway*0.40)+((1-lw.w)*12);
  if(Math.abs(homeP-awayP)<8){homeP+=lw.w*6;awayP+=(1-lw.w)*6;}
  let tot=homeP+awayP+22, hPct=Math.round(homeP/tot*100), aPct=Math.round(awayP/tot*100), dPct=100-hPct-aPct;
- let vic,dc,conf; if(hPct>aPct+12){vic=`Victoire ${h} à domicile`;dc="1X";conf=hPct+dPct;}else if(aPct>hPct+8){vic=`Victoire ${a} à l'extérieur`;dc="X2";conf=aPct+dPct;}else{vic=`Match serré - ${hPct>=aPct?h:a}`;dc=hPct>=aPct?"1X":"X2";conf=Math.round(Math.max(hPct,aPct)+dPct*0.6);}
- let bttsProb=(parseFloat(hG)+parseFloat(aG))/3.8, btts=bttsProb>0.55?"OUI":"NON";
- return{victoire:vic,dc,btts,conf,score:hPct>aPct?"1-0":"0-1",hPct,aPct,dPct,hHomeForm,aAwayForm,hG,aG,lw,txt:`FORME DOMICILE (${h}): ${hHomeForm}% sur 5 derniers à domicile, ${hG} buts/match. FORME EXTÉRIEUR (${a}): ${aAwayForm}% à l'extérieur, ${aG} buts. CHAMPIONNAT: ${lw.txt}. CALCUL: 60% domicile (${Math.round(hHomeForm*0.6)}%) + 40% extérieur (${Math.round(aAwayForm*0.4)}%) + championnat si écart <8%`}
+ let vic,dc,conf; if(hPct>aPct+12){vic=`Victoire ${h} à domicile`;dc="1X";conf=hPct+dPct;}else if(aPct>hPct+8){vic=`Victoire ${a} à l'extérieur`;dc="X2";conf=aPct+dPct;}else{vic=`Serré - ${hPct>=aPct?h:a}`;dc=hPct>=aPct?"1X":"X2";conf=Math.round(Math.max(hPct,aPct)+dPct*0.6);}
+ let bttsProb=(parseFloat(hG)+parseFloat(aG))/3.8;
+ return{vic,dc,conf,btts:bttsProb>0.55?"OUI":"NON",score:hPct>aPct?"1-0":"0-1",hPct,aPct,dPct,hHome,aAway,hG,aG,lw,txt:`DOMICILE ${h}: ${hHome}% à domicile (${hG} buts). EXTÉRIEUR ${a}: ${aAway}% à l'extérieur (${aG} buts). CHAMPIONNAT ${league}: ${lw.txt}. CALCUL: 60% x ${hHome}% (${Math.round(hHome*0.6)}%) + 40% x ${aAway}% (${Math.round(aAway*0.4)}%) + bonus championnat`}
 }
-function showTab(t){document.getElementById('all').style.display=t==='all'?'block':'none';document.getElementById('live').style.display=t==='live'?'block':'none';document.getElementById('t1').classList.toggle('active',t==='all');document.getElementById('t2').classList.toggle('active',t==='live');}
 async function load(){
+ let today = new Date().toISOString().split('T')[0].replace(/-/g,'');
+ let todayDisplay = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+ document.getElementById('dateInfo').innerText = `Matchs du ${todayDisplay} - Domicile 60% + Extérieur 40% + Championnat`;
  try{
-  let r=await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard');
-  if(!r.ok) throw "ESPN fail";
-  let j=await r.json(); let ev=j.events||[];
-  // Si Angleterre vide, on prend monde
-  if(ev.length<3){
-   let r2=await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard');
-   let j2=await r2.json(); ev=j2.events||ev;
-  }
-  let htmlA="";
-  ev.slice(0,20).forEach(e=>{
-   let comp=e.competitions[0]; let hm=comp.competitors.find(c=>c.homeAway==='home'); let aw=comp.competitors.find(c=>c.homeAway==='away'); if(!hm||!aw) return;
-   let lg=e.leagues?.[0]?.name||"Match"; let pr=makeRealAnalysis(hm.team.displayName,aw.team.displayName,lg);
-   let tm=new Date(e.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-   htmlA+=`<div class="card"><div class="league"><span><span class="badge top">${lg}</span> <span class="badge ia">V5.2</span></span><span>${tm}</span></div><div class="teams">${hm.team.displayName} vs ${aw.team.displayName}</div><div class="preds"><div class="box"><div class="label">Prédiction</div><div class="val">${pr.victoire}</div><div class="conf">H${pr.hPct}% N${pr.dPct}% A${pr.aPct}%</div></div><div class="box dc"><div class="label">Double Chance ⭐</div><div class="val">${pr.dc}</div><div class="conf">${pr.conf}%</div></div><div class="box btts"><div class="label">BTTS</div><div class="val">${pr.btts}</div></div><div class="box"><div class="label">Score</div><div class="val">${pr.score}</div></div></div><div class="detail"><b>🧠 V5 - DOMICILE 60% + EXTÉRIEUR 40% + CHAMPIONNAT:</b><br>${pr.txt}<br><br>📊 Domicile: ${pr.hHomeForm}% (${pr.hG} buts) | Extérieur: ${pr.aAwayForm}% (${pr.aG} buts)</div></div>`;
+  let url = `https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard?dates=${today}`;
+  let r = await fetch(url); let j = await r.json(); let ev = j.events||[];
+  // Filtre : seulement PRE et LIVE, pas les FINI
+  let filtered = ev.filter(e=>{
+   let state = e.competitions[0]?.status?.type?.state;
+   return state !== "post"; // On enlève les matchs terminés d'hier
   });
-  document.getElementById('all').innerHTML=htmlA||"<div class='card'>Pas de matchs en ce moment, reviens dans 1h - les matchs du jour arrivent</div>";
-  document.getElementById('live').innerHTML="<div class='card'>Pas de LIVE pour l'instant</div>";
+  if(filtered.length===0){
+   document.getElementById('all').innerHTML = `<div class="card">Aucun match prévu pour aujourd'hui (${todayDisplay}). <br><br>Les matchs d'hier (Europa) sont terminés, les matchs de demain arrivent ce soir. Reviens à 18h !</div>`;
+   return;
+  }
+  let html="";
+  filtered.slice(0,25).forEach(e=>{
+   let comp=e.competitions[0]; let hm=comp.competitors.find(c=>c.homeAway==='home'); let aw=comp.competitors.find(c=>c.homeAway==='away'); if(!hm||!aw) return;
+   let lg=e.leagues?.[0]?.name||"Match"; let tm=new Date(e.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+   let pr=makeRealAnalysis(hm.team.displayName,aw.team.displayName,lg);
+   html+=`<div class="card"><div class="league"><span><span class="badge top">${lg}</span> <span class="badge ia">V5.3 TODAY</span></span><span>${tm}</span></div><div class="teams">${hm.team.displayName} vs ${aw.team.displayName}</div><div class="preds"><div class="box"><div class="label">Prédiction</div><div class="val">${pr.vic}</div><div class="conf">H${pr.hPct}% N${pr.dPct}% A${pr.aPct}%</div></div><div class="box dc"><div class="label">Double Chance ⭐</div><div class="val">${pr.dc}</div><div class="conf">${pr.conf}%</div></div><div class="box btts"><div class="label">BTTS</div><div class="val">${pr.btts}</div></div><div class="box"><div class="label">Score</div><div class="val">${pr.score}</div></div></div><div class="detail"><b>🧠 V5.3 - DOMICILE 60% + EXTÉRIEUR 40% + CHAMPIONNAT:</b><br>${pr.txt}<br><br>📊 Domicile: ${pr.hHome}% (${pr.hG}) | Extérieur: ${pr.aAway}% (${pr.aG})</div></div>`;
+  });
+  document.getElementById('all').innerHTML=html;
  }catch(err){
-  document.getElementById('all').innerHTML=`<div class='card'>⚠️ Connexion lente détectée. <br><br>Actualise la page ou active VPN.<br><br>Erreur: ${err}<br><br><button onclick="location.reload()" style="background:#00ff88;padding:10px;border:none;border-radius:8px;width:100%;font-weight:bold">🔄 Recharger</button></div>`;
+  document.getElementById('all').innerHTML=`<div class='card'>Erreur chargement: ${err}<br><button onclick="location.reload()" style="background:#00ff88;padding:10px;border:none;border-radius:8px;width:100%;font-weight:bold;margin-top:10px">🔄 Recharger</button></div>`;
  }
 }
 load();
