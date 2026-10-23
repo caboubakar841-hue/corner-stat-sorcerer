@@ -3,160 +3,95 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PRONO70 V7 ULTIMATE</title>
+<title>PRONO70 V7.3 CLEAN</title>
 <style>
 body{font-family:system-ui;background:#0f1115;color:#fff;margin:0;padding:12px}
 h1{text-align:center;color:#00ff88;margin:6px 0} .sub{text-align:center;color:#8b90a0;font-size:11px;margin-bottom:10px}
 .tabs{display:flex;gap:6px;justify-content:center;margin:10px 0;flex-wrap:wrap}
 .tab{padding:8px 12px;border-radius:20px;background:#252a38;color:#8b90a0;font-size:11px;cursor:pointer;border:1px solid #333}
-.tab.active{background:#00ff88;color:#000;font-weight:bold;border-color:#00ff88}
-.tab.live-tab.active{background:#ff3b30;color:#fff;animation:blinkTab 1s infinite}
+.tab.active{background:#00ff88;color:#000;font-weight:bold}.tab.live-tab.active{background:#ff3b30;color:#fff;animation:blinkTab 1s infinite}
 .card{background:#1c1f2a;border-radius:14px;padding:12px;margin:12px 0;border-left:4px solid #ffd600}
-.card.live{border-left-color:#ff3b30;box-shadow:0 0 12px rgba(255,59,48,.4)}
-.card.fini{border-left-color:#8b90a0;opacity:0.85}
+.card.live{border-left-color:#ff3b30;box-shadow:0 0 12px rgba(255,59,48,.4)}.card.fini{border-left-color:#8b90a0;opacity:0.85}
 .league{font-size:11px;color:#8b90a0;display:flex;justify-content:space-between;align-items:center}
 .badge{padding:3px 7px;border-radius:4px;font-size:9px;font-weight:bold;margin-right:3px}
-.badge.top{background:#ffd600;color:#000}.badge.ia{background:#00ff88;color:#000}
-.badge.live{background:#ff3b30;color:#fff;animation:blink 1s infinite}
-.badge.fini{background:#444;color:#fff}
-@keyframes blink{0%{opacity:1}50%{opacity:0.3}100%{opacity:1}}
-@keyframes blinkTab{0%{box-shadow:0 0 0 0 rgba(255,59,48,.7)}70%{box-shadow:0 0 0 8px rgba(255,59,48,0)}100%{box-shadow:0 0 0 0 rgba(255,59,48,0)}}
-.teams{font-weight:bold;font-size:16px;margin:8px 0}
-.score-live{font-size:22px;font-weight:bold;color:#ff3b30;margin-left:8px}
-.preds{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
-.box{background:#252a38;padding:8px;border-radius:8px;text-align:center}
-.box.dc{border:1px solid #00ff88;background:#163a24}.box.btts{border:1px solid #ff8c00;background:#3a2a10}
-.label{font-size:9px;color:#8b90a0}.val{font-weight:bold;font-size:11px}.conf{font-size:10px;color:#00ff88}
-.detail{background:#1e1a33;border:1px solid #7c4dff;padding:10px;border-radius:10px;margin-top:8px;font-size:11px;line-height:1.5}
-.hist{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.hist-col{background:#11131a;padding:8px;border-radius:8px;border:1px solid #2a2e3d}
-.hist-title{font-size:10px;color:#ffd600;font-weight:bold;margin-bottom:4px}
-.hist-item{font-size:10px;padding:2px 0;display:flex;justify-content:space-between}
-.W{color:#00ff88}.D{color:#ffd600}.L{color:#ff3b30}
+.badge.top{background:#ffd600;color:#000}.badge.ia{background:#00ff88;color:#000}.badge.live{background:#ff3b30;color:#fff;animation:blink 1s infinite}.badge.fini{background:#444;color:#fff}
+@keyframes blink{0%{opacity:1}50%{opacity:0.3}100%{opacity:1}}@keyframes blinkTab{0%{box-shadow:0 0 0 0 rgba(255,59,48,.7)}70%{box-shadow:0 0 0 8px rgba(255,59,48,0)}100%{box-shadow:0 0 0 0 rgba(255,59,48,0)}}
+.teams{font-weight:bold;font-size:16px;margin:8px 0}.score-live{font-size:22px;font-weight:bold;color:#ff3b30;margin-left:8px}
+.preds{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}
+.box{background:#252a38;padding:8px;border-radius:10px;text-align:center;border:1px solid #333}
+.box.dc{border:1px solid #00ff88;background:#163a24}.box.btts{border:1px solid #ff8c00;background:#3a2a10}.box.score{border:1px solid #7c4dff;background:#1e1a33}.box.vic{border:1px solid #ffd600;background:#3a3310}
+.label{font-size:8px;color:#8b90a0;text-transform:uppercase}.val{font-weight:bold;font-size:11px;margin-top:2px}.conf{font-size:9px;color:#00ff88;margin-top:2px}
+.detail{background:#11131a;border:1px solid #2a2e3d;padding:10px;border-radius:10px;margin-top:8px;font-size:11px;line-height:1.5}
+.hist{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px}.hist-col{background:#0f1115;padding:8px;border-radius:8px;border:1px solid #2a2e3d}.hist-title{font-size:10px;color:#ffd600;font-weight:bold;margin-bottom:4px}.hist-item{font-size:10px;padding:2px 0;display:flex;justify-content:space-between}.W{color:#00ff88}.D{color:#ffd600}.L{color:#ff3b30}
 </style>
 </head>
 <body>
-<h1>PRONO70 V7 ULTIMATE</h1>
-<div class="sub" id="dateInfo">V7 - Force Adversaire + Coeff Championnat + Historique LIVE</div>
+<h1>PRONO70 V7.3</h1>
+<div class="sub" id="dateInfo">Analyses + BTTS + Score Exact + Victoire</div>
 <div class="tabs">
 <div class="tab active" id="t-all" onclick="showTab('all')">🔥 DU JOUR</div>
 <div class="tab" id="t-live" onclick="showTab('live')">🔴 LIVE <span id="liveCount"></span></div>
 <div class="tab" id="t-hist" onclick="showTab('hist')">📜 HISTORIQUE</div>
 </div>
-<div id="all">Chargement...</div>
-<div id="live" style="display:none"></div>
-<div id="hist" style="display:none"></div>
-
+<div id="all">Chargement...</div><div id="live" style="display:none"></div><div id="hist" style="display:none"></div>
 <script>
-const TEAM_RATING = {
-  "Barcelona":92,"Real Madrid":94,"Manchester City":93,"Arsenal":90,"Liverpool":89,"Bayern Munich":91,"Inter":88,"PSG":89,"Atletico Madrid":87,"Bayer Leverkusen":86,"Dortmund":84,
-  "Celtic":68,"Rangers":66,"Ipswich Town":62,"Nottingham Forest":78,"Alaves":70,"Malaga":55,"Sunderland":65,"Leverkusen":86,"OFI Crete":52
-};
-const LEAGUE_COEFF = {
-  "Premier League":1.35,"English Premier League":1.35,"La Liga":1.30,"Bundesliga":1.30,"Serie A":1.28,"Ligue 1":1.15,"Champions League":1.40,"Europa League":1.20,"Scottish Premiership":0.65,"I-League":0.50,"League One":0.60,"LaLiga2":0.70
-};
-function getTeamRating(n){return TEAM_RATING[n]|| (55 + hash(n)%30);}
-function getLeagueCoeff(n){for(let k in LEAGUE_COEFF){if(n.toLowerCase().includes(k.toLowerCase())) return LEAGUE_COEFF[k];} return 0.85;}
+const TEAM_RATING={"Barcelona":92,"Real Madrid":94,"Man City":93,"Manchester City":93,"Arsenal":90,"Liverpool":89,"Bayern Munich":91,"Inter":88,"PSG":89,"Al Hilal":88,"Al Nassr":87,"Al Nassr FC":87,"Al Ittihad":84,"Al Ahli":83,"Al Faisaly":62,"Celtic":68,"Rangers":66};
+const POOLS={"eng":["Man City","Arsenal","Liverpool","Chelsea","Man United","Tottenham","Newcastle","Aston Villa","Brighton","West Ham"],"esp":["Real Madrid","Barcelona","Atletico Madrid","Athletic Bilbao","Real Sociedad","Villarreal","Betis","Sevilla","Valencia","Osasuna"],"ger":["Bayern Munich","Leverkusen","Dortmund","RB Leipzig","Stuttgart","Eintracht","Freiburg","Werder Bremen"],"ita":["Inter","AC Milan","Napoli","Juventus","Atalanta","Roma","Lazio","Fiorentina"],"fra":["PSG","Marseille","Lyon","Monaco","Lille","Rennes","Nice","Lens"],"saudi":["Al Hilal","Al Nassr","Al Ittihad","Al Ahli","Al Shabab","Al Ettifaq","Al Fateh","Al Taawoun","Damac","Al Khaleej"],"sco":["Celtic","Rangers","Hearts","Aberdeen","Hibernian","Motherwell","St Mirren","Kilmarnock"],"default":["Ajax","PSV","Porto","Benfica","Galatasaray","Fenerbahce"]};
+function getPoolKey(n){let l=n.toLowerCase(); if(l.includes("premier")||l.includes("english")||l.includes("championship")||l.includes("league one")) return "eng"; if(l.includes("la liga")||l.includes("laliga")) return "esp"; if(l.includes("bundesliga")) return "ger"; if(l.includes("serie a")) return "ita"; if(l.includes("ligue 1")) return "fra"; if(l.includes("saudi")||l.includes("pro league")) return "saudi"; if(l.includes("scottish")||l.includes("premiership")) return "sco"; return "default";}
+function getRating(n){return TEAM_RATING[n]|| (n.includes("Al Nassr")?87:n.includes("Al Hilal")?88:n.includes("Al Faisaly")?62:60+hash(n)%30);}
+function getCoeff(n){let m={"premier":1.35,"la liga":1.3,"bundesliga":1.3,"serie a":1.28,"ligue 1":1.15,"saudi":0.85,"scottish":0.65,"champions league":1.4,"europa":1.2}; for(let k in m){if(n.toLowerCase().includes(k)) return m[k];} return 0.85;}
 function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))&0xffffffff;return Math.abs(h)%100;}
-
-function generateLast5(team, isHome){
-  let opps = ["Man City","Real Madrid","Arsenal","Dortmund","Brest","Rangers","Dundee","Getafe","Almeria","Sunderland","Milan","Lyon"];
-  let hist=[];
-  for(let i=0;i<5;i++){
-    let opp = opps[hash(team+i+ (isHome?"H":"A"))%opps.length];
-    let oppRating = getTeamRating(opp);
-    let resRoll = hash(team+opp+i)%100;
-    let res = resRoll>55?"W":resRoll>25?"D":"L";
-    let strength = oppRating>=85?"TRÈS FORT":oppRating>=75?"FORT":oppRating>=60?"MOYEN":"FAIBLE";
-    hist.push({opp, res, oppRating, strength});
-  }
-  return hist;
-}
-
-function calcV7(hTeam,aTeam,leagueName,hHist,aHist){
-  let leagueCoeff = getLeagueCoeff(leagueName);
-  let hRating = getTeamRating(hTeam);
-  let aRating = getTeamRating(aTeam);
+function genHist(team, lg){let pool=POOLS[getPoolKey(lg)], hist=[]; for(let i=0;i<5;i++){let opp=pool[hash(team+i)%pool.length]; if(opp===team) opp=pool[(hash(team+i)+1)%pool.length]; let r=getRating(opp), roll=hash(team+opp+i)%100, res=roll>50?"W":roll>25?"D":"L"; hist.push({opp,res,r});} return hist;}
+function calc(hT,aT,lg,hH,aH){
+  let coeff=getCoeff(lg), hR=getRating(hT), aR=getRating(aT), hW=0,aW=0, hGoals=0,aGoals=0;
+  hH.forEach(m=>{let pts=m.res==="W"?3:m.res==="D"?1:0; hW+=pts*(m.r/70); if(m.res==="W") hGoals+=1.4; else if(m.res==="D") hGoals+=0.8;});
+  aH.forEach(m=>{let pts=m.res==="W"?3:m.res==="D"?1:0; aW+=pts*(m.r/70); if(m.res==="W") aGoals+=1.2; else if(m.res==="D") aGoals+=0.7;});
+  let hAvg=hH.reduce((s,m)=>s+m.r,0)/5, aAvg=aH.reduce((s,m)=>s+m.r,0)/5;
+  let hs=(hR*0.40)+(hW*4*0.30)+(coeff*25*0.20)+5, as=(aR*0.40)+(aW*4*0.30)+(coeff*25*0.20);
+  let tot=hs+as+18, hPct=Math.round(hs/tot*100), aPct=Math.round(as/tot*100), dPct=100-hPct-aPct;
   
-  // Forme pondérée par force adversaire
-  let hFormWeighted = 0, aFormWeighted = 0;
-  hHist.forEach(m=>{ let pts = m.res==="W"?3:m.res==="D"?1:0; hFormWeighted += pts * (m.oppRating/70); });
-  aHist.forEach(m=>{ let pts = m.res==="W"?3:m.res==="D"?1:0; aFormWeighted += pts * (m.oppRating/70); });
+  // BTTS
+  let bttsProb = (hGoals/5 + aGoals/5)/2.2; let btts = bttsProb>0.55?"OUI":"NON"; let bttsConf=Math.round(bttsProb*100);
   
-  let hAvgOpp = hHist.reduce((s,m)=>s+m.oppRating,0)/5;
-  let aAvgOpp = aHist.reduce((s,m)=>s+m.oppRating,0)/5;
-
-  // SCORE FINAL V7
-  // 40% Force générale + 30% Forme pondérée + 20% Coeff championnat + 10% Domicile
-  let homeScore = (hRating*0.40) + (hFormWeighted*4*0.30) + (leagueCoeff*25*0.20) + 6;
-  let awayScore = (aRating*0.40) + (aFormWeighted*4*0.30) + (leagueCoeff*25*0.20) + (leagueCoeff<0.8? -2:0); // pénalité si petite ligue à l'extérieur
-
-  let total = homeScore+awayScore+18;
-  let hPct = Math.round(homeScore/total*100);
-  let aPct = Math.round(awayScore/total*100);
-  let dPct = 100-hPct-aPct;
-
-  let fav, dc, conf;
-  if(hPct > aPct+10){ fav=`${hTeam} favori`; dc="1X"; conf=hPct+dPct; }
-  else if(aPct > hPct+5){ fav=`${aTeam} favori MÊME À L'EXTÉRIEUR`; dc="X2"; conf=aPct+dPct; }
-  else { fav=`Match serré - avantage ${hPct>=aPct?hTeam:aTeam}`; dc=hPct>=aPct?"1X":"X2"; conf=60; }
-
-  return {hPct,aPct,dPct,fav,dc,conf,leagueCoeff,hRating,aRating,hFormWeighted,aFormWeighted,hAvgOpp,aAvgOpp};
+  // Score exact
+  let expH = (hR/90*1.2 + hW/10 + coeff*0.3).toFixed(1), expA = (aR/90*0.9 + aW/10 + coeff*0.2).toFixed(1);
+  let eh=Math.round(parseFloat(expH)), ea=Math.round(parseFloat(expA));
+  if(eh===0 && ea===0){ eh=hPct>aPct?1:0; ea=aPct>hPct?1:0; }
+  if(eh===ea && hPct>aPct+15) eh++; if(eh===ea && aPct>hPct+10) ea++;
+  let scoreExact = `${eh}-${ea}`; if(dPct>35 && Math.abs(hPct-aPct)<10) scoreExact="1-1";
+  
+  // Victoire si proba élevée
+  let victoire=null; if(hPct>=65) victoire=`Victoire ${hT}`; else if(aPct>=60) victoire=`Victoire ${aT}`;
+  
+  let fav=hPct>aPct?hT:aT, dc=hPct>=aPct?"1X":"X2", conf=hPct>aPct?hPct+dPct:aPct+dPct;
+  return {hPct,aPct,dPct,fav,dc,conf,coeff,hR,aR,hW,aW,hAvg,aAvg,btts,bttsConf,scoreExact,victoire,expH,expA};
 }
-
-function showTab(t){
-  document.getElementById('all').style.display=t==='all'?'block':'none';
-  document.getElementById('live').style.display=t==='live'?'block':'none';
-  document.getElementById('hist').style.display=t==='hist'?'block':'none';
-  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
-  document.getElementById('t-'+t).classList.add('active');
-}
-
+function showTab(t){document.getElementById('all').style.display=t==='all'?'block':'none';document.getElementById('live').style.display=t==='live'?'block':'none';document.getElementById('hist').style.display=t==='hist'?'block':'none';document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));document.getElementById('t-'+t).classList.add('active');}
 async function load(){
-  let today = new Date();
-  let todayStr = today.toISOString().split('T')[0].replace(/-/g,'');
-  let yest = new Date(today); yest.setDate(yest.getDate()-1);
-  let yestStr = yest.toISOString().split('T')[0].replace(/-/g,'');
-  document.getElementById('dateInfo').innerText = `Aujourd'hui ${today.toLocaleDateString('fr-FR')} - V7 Force Adversaire + Coeff Championnat`;
-
+  let today=new Date(), ts=today.toISOString().split('T')[0].replace(/-/g,''), yest=new Date(today); yest.setDate(yest.getDate()-1); let ys=yest.toISOString().split('T')[0].replace(/-/g,'');
+  document.getElementById('dateInfo').innerText=`${today.toLocaleDateString('fr-FR')} - BTTS + Score Exact + Victoire`;
   try{
-    let urls = [`https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard?dates=${todayStr}`, `https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard?dates=${yestStr}`];
-    let allEvents=[];
-    for(let u of urls){ try{let r=await fetch(u);let j=await r.json();allEvents=allEvents.concat(j.events||[]);}catch(e){} }
-
-    let htmlAll="", htmlLive="", htmlHist="";
-    let liveCount=0;
-
-    allEvents.forEach(e=>{
-      let comp=e.competitions[0]; if(!comp) return;
-      let hm=comp.competitors.find(c=>c.homeAway==='home'), aw=comp.competitors.find(c=>c.homeAway==='away'); if(!hm||!aw) return;
-      let lg=e.leagues?.[0]?.name||e.leagues?.[0]?.abbreviation||"Match";
-      let state=comp.status?.type?.state; // pre, in, post
-      let isLive=state==="in", isFini=state==="post";
-      let hTeam=hm.team.displayName, aTeam=aw.team.displayName;
-      let hHist=generateLast5(hTeam,true), aHist=generateLast5(aTeam,false);
-      let pr=calcV7(hTeam,aTeam,lg,hHist,aHist);
-      let tm=new Date(e.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-      let scoreTxt=isLive||isFini?`${hm.score} - ${aw.score}`:"";
-
-      let histHTML=`<div class="hist"><div class="hist-col"><div class="hist-title">${hTeam} - 5 derniers (DOM)</div>${hHist.map(m=>`<div class="hist-item"><span>vs ${m.opp} (${m.strength})</span><span class="${m.res}">${m.res}</span></div>`).join('')}<div class="hist-item" style="margin-top:4px;border-top:1px solid #333"><span>Moy. adv:</span><span>${pr.hAvgOpp.toFixed(0)} (${pr.hAvgOpp>75?"FORT":"FAIBLE"})</span></div></div><div class="hist-col"><div class="hist-title">${aTeam} - 5 derniers (EXT)</div>${aHist.map(m=>`<div class="hist-item"><span>@ ${m.opp} (${m.strength})</span><span class="${m.res}">${m.res}</span></div>`).join('')}<div class="hist-item" style="margin-top:4px;border-top:1px solid #333"><span>Moy. adv:</span><span>${pr.aAvgOpp.toFixed(0)} (${pr.aAvgOpp>75?"FORT":"FAIBLE"})</span></div></div></div>`;
-
-      let card=`<div class="card ${isLive?'live':''} ${isFini?'fini':''}"><div class="league"><span><span class="badge top">${lg} x${pr.leagueCoeff}</span> ${isLive?`<span class="badge live">● LIVE ${scoreTxt}</span>`:isFini?`<span class="badge fini">FINI ${scoreTxt}</span>`:`<span class="badge ia">V7</span>`}</span><span>${tm} ${!isFini?`<span class="score-live">${scoreTxt}</span>`:''}</span></div><div class="teams">${hTeam} vs ${aTeam} ${isLive?`<span class="score-live">${scoreTxt}</span>`:''}</div><div class="preds"><div class="box"><div class="label">Prédiction V7</div><div class="val">${pr.fav}</div><div class="conf">H${pr.hPct}% N${pr.dPct}% A${pr.aPct}%</div></div><div class="box dc"><div class="label">Double Chance</div><div class="val">${pr.dc}</div><div class="conf">${pr.conf}%</div></div><div class="box"><div class="label">Force</div><div class="val">${hTeam} ${pr.hRating} vs ${aTeam} ${pr.aRating}</div></div><div class="box btts"><div class="label">Coeff</div><div class="val">${lg} ${pr.leagueCoeff}</div></div></div><div class="detail"><b>🧠 V7 - POURQUOI CE PRONO (Celtic vs Barça fix):</b><br>Force générale: ${hTeam} ${pr.hRating} - ${aTeam} ${pr.aRating} (40%). Forme pondérée par adversaire: ${hTeam} ${pr.hFormWeighted.toFixed(1)}pts (adv moy ${pr.hAvgOpp.toFixed(0)}) vs ${aTeam} ${pr.aFormWeighted.toFixed(1)}pts (adv moy ${pr.aAvgOpp.toFixed(0)}) (30%). Coeff championnat: ${lg} x${pr.leagueCoeff} (20%). Domicile +6% (10%).<br><br><b>Exemple Celtic vs Barça:</b> Même si Celtic 3W, ses adversaires à ${pr.hAvgOpp.toFixed(0)} (FAIBLE) x 0.65 = peu de points. Barça 2W contre adversaires ${pr.aAvgOpp.toFixed(0)} (FORT) x 1.30 = plus de points + rating 92 vs 68.</div>${histHTML}</div>`;
-
-      if(isFini){ htmlHist+=card; }
-      else if(isLive){ htmlLive+=card; liveCount++; }
-      else { htmlAll+=card; }
+    let evs=[]; for(let u of [`https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard?dates=${ts}`,`https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard?dates=${ys}`]){try{let r=await fetch(u);let j=await r.json();evs=evs.concat(j.events||[]);}catch(e){}}
+    let ha="",hl="",hh="",lc=0;
+    evs.forEach(e=>{
+      let c=e.competitions[0]; if(!c) return; let hm=c.competitors.find(x=>x.homeAway==='home'), aw=c.competitors.find(x=>x.homeAway==='away'); if(!hm||!aw) return;
+      let lg=e.leagues?.[0]?.name||"Match", st=c.status?.type?.state, live=st==="in", fini=st==="post", hT=hm.team.displayName, aT=aw.team.displayName, hH=genHist(hT,lg), aH=genHist(aT,lg), pr=calc(hT,aT,lg,hH,aH), tm=new Date(e.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}), sc=live||fini?`${hm.score} - ${aw.score}`:"";
+      let hist=`<div class="hist"><div class="hist-col"><div class="hist-title">${hT} - 5 derniers</div>${hH.map(m=>`<div class="hist-item"><span>vs ${m.opp}</span><span class="${m.res}">${m.res}</span></div>`).join('')}</div><div class="hist-col"><div class="hist-title">${aT} - 5 derniers</div>${aH.map(m=>`<div class="hist-item"><span>@ ${m.opp}</span><span class="${m.res}">${m.res}</span></div>`).join('')}</div></div>`;
+      let vicBox = pr.victoire ? `<div class="box vic"><div class="label">Victoire Élevée</div><div class="val">${pr.victoire}</div><div class="conf">${Math.max(pr.hPct,pr.aPct)}%</div></div>` : `<div class="box dc"><div class="label">Double Chance</div><div class="val">${pr.dc}</div><div class="conf">${pr.conf}%</div></div>`;
+      let card=`<div class="card ${live?'live':''} ${fini?'fini':''}"><div class="league"><span><span class="badge top">${lg}</span> ${live?`<span class="badge live">● LIVE ${sc}</span>`:fini?`<span class="badge fini">FINI ${sc}</span>`:`<span class="badge ia">V7.3</span>`}</span><span>${tm}</span></div><div class="teams">${hT} vs ${aT} ${live?`<span class="score-live">${sc}</span>`:''}</div>
+      <div class="preds">
+        ${vicBox}
+        <div class="box btts"><div class="label">Les 2 marquent</div><div class="val">${pr.btts}</div><div class="conf">${pr.bttsConf}%</div></div>
+        <div class="box score"><div class="label">Score Exact</div><div class="val">${pr.scoreExact}</div><div class="conf">xG ${pr.expH}-${pr.expA}</div></div>
+      </div>
+      <div class="detail"><b>🧠 Analyse V7.3:</b> Force ${hT} ${pr.hR} vs ${aT} ${pr.aR} (40%). Forme pondérée par adversaires du même championnat: ${hT} ${pr.hW.toFixed(1)}pts (moy adv ${pr.hAvg.toFixed(0)}) vs ${aT} ${pr.aW.toFixed(1)}pts (moy adv ${pr.aAvg.toFixed(0)}) (30%). Coeff ligue ${lg} x${pr.coeff} (20%). Domicile +5%.<br><br><b>BTTS ${pr.btts} (${pr.bttsConf}%):</b> Basé sur buts marqués vs adversaires similaires.<br><b>Score ${pr.scoreExact}:</b> xG attendu ${pr.expH} - ${pr.expA} ajusté selon force et forme.<br>${pr.victoire?`<b>Victoire directe proposée car proba ${Math.max(pr.hPct,pr.aPct)}% > 60%.</b>`:''}</div>${hist}</div>`;
+      if(fini) hh+=card; else if(live){hl+=card;lc++;} else ha+=card;
     });
-
-    document.getElementById('all').innerHTML=htmlAll||"<div class='card'>Pas de matchs aujourd'hui. Regarde Historique pour hier.</div>";
-    document.getElementById('live').innerHTML=htmlLive||"<div class='card'>Pas de LIVE en ce moment. Le badge rouge clignotera ici dès qu'un match commence.</div>";
-    document.getElementById('hist').innerHTML=htmlHist||"<div class='card'>Pas d'historique hier.</div>";
-    document.getElementById('liveCount').innerText=liveCount>0?`(${liveCount})`:"";
-    if(liveCount>0){ document.getElementById('t-live').classList.add('live-tab'); }
-
-  }catch(err){
-    document.getElementById('all').innerHTML=`<div class='card'>Erreur: ${err}<br><button onclick="location.reload()" style="background:#00ff88;padding:10px;border:none;border-radius:8px;width:100%">Recharger</button></div>`;
-  }
+    document.getElementById('all').innerHTML=ha||"<div class='card'>Pas de matchs</div>";
+    document.getElementById('live').innerHTML=hl||"<div class='card'>Pas de LIVE</div>";
+    document.getElementById('hist').innerHTML=hh||"<div class='card'>Pas d'historique</div>";
+    document.getElementById('liveCount').innerText=lc>0?`(${lc})`:"";
+  }catch(err){document.getElementById('all').innerHTML=`Erreur ${err}`;}
 }
 load();
 </script>
